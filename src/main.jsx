@@ -33,41 +33,45 @@ import './styles.css';
 const content = {
   en: {
     dir: 'ltr',
-    nav: ['Home', 'Modules', 'Simulation', 'Assessment', 'Launch'],
+    nav: ['Home', 'Modules', 'Simulation', 'Launch'],
     switchTo: 'العربية',
     languageLabel: 'Language',
-    heroTitle: 'An official Cath Lab training platform — education, simulation, competencies, and certificates',
-    heroText: 'A launch-ready demo for Cath Lab staff development: role-based pathways, STEMI simulation, 3D orientation, knowledge checks, competency tracking, and a clear implementation roadmap.',
+    heroTitle: 'Cath Lab Academy — Education, Simulation, and Competency Validation',
+    heroText: 'A launch-ready demo for Cath Lab staff development: role-based pathways, STEMI simulation, 3D orientation, competency tracking, and a clear implementation roadmap.',
     explore: 'Explore the platform',
-    savePdf: 'Save as PDF',
+    savePdf: 'Print Certificate',
     os: 'Clinical Training OS',
-    signed: 'Signed',
+    signed: 'Validated',
     stats: [
       ['4', 'Training Tracks', 'Role-based education'],
       ['3', 'Clinical Scenarios', 'Decision practice'],
       ['20', 'Competencies', 'Trainer sign-off'],
       ['AR/VR', 'Future Ready', 'WebXR pathway']
     ],
+    overviewTitle: 'Built for clinical training governance',
+    overviewText: 'A professional structure that connects education, simulation, observed competency, and launch readiness in one clear experience for Cath Lab staff development.',
+    overviewCards: [
+      ['Role-based onboarding', 'Recovery, circulating, scrub, and quality pathways with clear progression levels.'],
+      ['Competency evidence', 'Checklist-based validation that supports trainer review and departmental records.'],
+      ['Simulation readiness', 'Interactive STEMI and complication scenarios to standardize decision-making practice.']
+    ],
+    qualityBadges: ['Policy-aligned', 'Trainer-led', 'Bilingual', 'Certificate-ready'],
     trainingArchitecture: 'Training Architecture',
     modulesTitle: 'Official role-based training pathways',
     curriculum: 'Curriculum Pathway',
     competency: 'Competency Sign-off',
     heartTitle: '3D Coronary Orientation',
-    heartText: 'A simplified orientation model that can later be replaced with a real GLB heart model and WebXR experience.',
+    heartText: 'Prototype visualization — final 3D heart model and WebXR experience to be added in the next development phase.',
     selectedAnatomy: 'Selected anatomy',
     rotate: 'Rotate',
     reset: 'Reset',
     simulationTitle: 'Interactive Clinical Simulation',
     simulationScore: 'Simulation score',
-    assessmentEngine: 'Assessment Engine',
-    assessmentTitle: 'Knowledge check + competency record + printable certificate',
     certificateTitle: 'Cath Lab Academy Certificate Preview',
-    knowledgeScore: 'Knowledge score',
-    competencyCompletion: 'Competency completion',
+    competencyValidation: 'Competency validation',
     status: 'Status',
-    readyStatus: 'Ready for trainer sign-off',
+    readyStatus: 'Ready for trainer validation',
     progressStatus: 'Training in progress',
-    print: 'Print / Save PDF',
     launchPlan: 'Official Launch Plan',
     launchTitle: 'Readiness to become an official website',
     launchCards: [
@@ -107,46 +111,44 @@ const content = {
       { title: 'Radial Hematoma', subtitle: 'Swelling and pain after radial catheterization', priority: 'High', prompt: 'Recovery nurse notices swelling and increasing pain at the radial access site.', question: 'Best immediate nursing response?', choices: ['Apply compression, assess neurovascular status, notify operator and document', 'Ignore if pulse is still present', 'Remove all monitoring and discharge'], answer: 0, why: 'Early compression and neurovascular checks reduce progression and detect limb compromise.' },
       { title: 'Stent Verification', subtitle: 'Device verification before use', priority: 'High', prompt: 'Operator requests a drug-eluting stent during PCI.', question: 'What should the scrub role verify verbally?', choices: ['Brand only', 'Size, length, expiry, pressure limit, operator request and packaging integrity', 'Nothing unless complication occurs'], answer: 1, why: 'Closed-loop device verification prevents wrong-size, expired-device, and documentation errors.' }
     ],
-    quiz: [
-      ['Best assessment design for Cath Lab training?', ['Attendance only', 'Knowledge + decision-making + observed competency', 'Only video watch time'], 1],
-      ['Which role owns timeout coordination?', ['Circulating nurse with full team participation', 'Patient family', 'Only recovery nurse'], 0],
-      ['After femoral cath, what is essential?', ['Access-site and distal neurovascular assessment', 'Immediate ambulation without assessment', 'Remove all documentation'], 0],
-      ['What makes AR/VR valuable in Cath Lab training?', ['Safe repetitive practice of rare/high-risk situations', 'Replacing all clinical supervision', 'Removing competency validation'], 0]
-    ],
     roadmap: [['Phase 1', 'Official website + training catalog', 'Ready'], ['Phase 2', 'User accounts + trainer dashboard', 'Next'], ['Phase 3', 'Database, certificates, analytics', 'Next'], ['Phase 4', '3D GLB heart + WebXR/AR markers', 'Advanced'], ['Phase 5', 'Hospital LMS integration', 'Enterprise']]
   },
   ar: {
     dir: 'rtl',
-    nav: ['الرئيسية', 'المسارات', 'المحاكاة', 'التقييم', 'النشر'],
+    nav: ['الرئيسية', 'المسارات', 'المحاكاة', 'النشر'],
     switchTo: 'English',
     languageLabel: 'اللغة',
-    heroTitle: 'منصة تدريب رسمية للقسطرة القلبية — تعليم، محاكاة، كفاءات، وشهادات',
-    heroText: 'نسخة عرض رسمية لمشروع تطوير طاقم Cath Lab: مسارات حسب الدور الوظيفي، محاكاة STEMI، نموذج 3D، اختبارات، تتبع كفاءات، وخطة إطلاق واضحة.',
+    heroTitle: 'Cath Lab Academy — تعليم، محاكاة، واعتماد كفاءات',
+    heroText: 'نسخة عرض رسمية لمشروع تطوير طاقم Cath Lab: مسارات حسب الدور الوظيفي، محاكاة STEMI، نموذج 3D، تتبع كفاءات، وخطة إطلاق واضحة.',
     explore: 'ابدأ استعراض المنصة',
-    savePdf: 'حفظ كـ PDF',
+    savePdf: 'طباعة الشهادة',
     os: 'نظام التدريب السريري',
-    signed: 'مكتملة',
+    signed: 'معتمدة',
     stats: [['4', 'مسارات تدريب', 'تعليم حسب الدور'], ['3', 'سيناريوهات سريرية', 'تدريب اتخاذ القرار'], ['20', 'كفاءة', 'اعتماد المدرب'], ['AR/VR', 'جاهز للمستقبل', 'مسار WebXR']],
+    overviewTitle: 'مصمم لحوكمة التدريب السريري',
+    overviewText: 'هيكلة احترافية تربط التعليم، المحاكاة، تقييم الكفاءات، وجاهزية الإطلاق في تجربة واحدة واضحة لتطوير طاقم Cath Lab.',
+    overviewCards: [
+      ['تهيئة حسب الدور', 'مسارات Recovery وCirculating وScrub والجودة مع مستويات تقدم واضحة.'],
+      ['إثبات الكفاءة', 'اعتماد مبني على قوائم تحقق يدعم مراجعة المدرب وسجلات القسم.'],
+      ['جاهزية المحاكاة', 'سيناريوهات STEMI والمضاعفات لتوحيد التدريب على اتخاذ القرار.']
+    ],
+    qualityBadges: ['متوافق مع السياسات', 'بإشراف المدرب', 'ثنائي اللغة', 'جاهز للشهادة'],
     trainingArchitecture: 'هيكلة التدريب',
     modulesTitle: 'مسارات تدريب رسمية حسب الدور الوظيفي',
     curriculum: 'المسار التعليمي',
     competency: 'اعتماد الكفاءات',
     heartTitle: 'توجيه ثلاثي الأبعاد للشرايين التاجية',
-    heartText: 'نموذج توجيهي مبسط قابل للاستبدال لاحقًا بمجسم قلب GLB وتجربة WebXR.',
+    heartText: 'تصور أولي Prototype — سيتم إضافة مجسم قلب ثلاثي الأبعاد وتجربة WebXR في مرحلة التطوير القادمة.',
     selectedAnatomy: 'العنصر المحدد',
     rotate: 'تدوير',
     reset: 'إعادة',
     simulationTitle: 'محاكاة سريرية تفاعلية',
     simulationScore: 'نتيجة المحاكاة',
-    assessmentEngine: 'محرك التقييم',
-    assessmentTitle: 'اختبار معرفة + سجل كفاءات + شهادة قابلة للطباعة',
     certificateTitle: 'معاينة شهادة Cath Lab Academy',
-    knowledgeScore: 'درجة المعرفة',
-    competencyCompletion: 'اكتمال الكفاءات',
+    competencyValidation: 'اعتماد الكفاءات',
     status: 'الحالة',
     readyStatus: 'جاهز لاعتماد المدرب',
     progressStatus: 'التدريب قيد التقدم',
-    print: 'طباعة / حفظ PDF',
     launchPlan: 'خطة الإطلاق الرسمية',
     launchTitle: 'جاهزية التحويل إلى موقع رسمي',
     launchCards: [['الحوكمة', 'تنبيه طبي، مراجعة محتوى، اعتماد داخلي، وصلاحيات مدربين قبل الاستخدام الرسمي.'], ['النشر', 'جاهز للنشر على Vercel/Netlify، ثم ربط دومين رسمي وشهادة SSL.'], ['التحليلات', 'المرحلة القادمة تضيف متابعة أداء المتدربين ونتائج الكفاءات حسب القسم.']],
@@ -161,12 +163,6 @@ const content = {
       { title: 'تفعيل STEMI', subtitle: 'تفعيل مسار STEMI', priority: 'حرج', prompt: 'يصل المريض من الطوارئ مع ECG يؤكد STEMI وتسليم عاجل.', question: 'ما أول إجراء عالي الموثوقية؟', choices: ['فتح جميع أجهزة PCI مباشرة', 'التحقق من الهوية والحساسية والموافقة وECG والوريد وجاهزية الفريق', 'الانتظار حتى نتيجة التصوير'], answer: 1, why: 'هذا يمنع أخطاء المريض/الإجراء/الحساسية مع الحفاظ على سرعة مسار STEMI.' },
       { title: 'Radial Hematoma', subtitle: 'تورم وألم بعد القسطرة الشعاعية', priority: 'عالٍ', prompt: 'لاحظ ممرض الإفاقة تورمًا وألمًا متزايدًا في موقع الدخول الشعاعي.', question: 'أفضل استجابة تمريضية فورية؟', choices: ['الضغط، تقييم Neurovascular، إبلاغ الطبيب، والتوثيق', 'تجاهله إذا كان النبض موجودًا', 'إزالة المراقبة والخروج'], answer: 0, why: 'الضغط المبكر وفحص Neurovascular يقللان التفاقم ويكشفان أي تأثر في الطرف.' },
       { title: 'Stent Verification', subtitle: 'التحقق من الدعامة قبل الاستخدام', priority: 'عالٍ', prompt: 'طلب الطبيب Drug-eluting stent أثناء PCI.', question: 'ماذا يجب أن يؤكد دور Scrub شفهيًا؟', choices: ['العلامة التجارية فقط', 'المقاس والطول والصلاحية وحد الضغط وطلب الطبيب وسلامة التغليف', 'لا شيء إلا عند حدوث مضاعفة'], answer: 1, why: 'التحقق المغلق يقلل أخطاء المقاس أو الصلاحية أو التوثيق.' }
-    ],
-    quiz: [
-      ['أفضل تصميم تقييم لتدريب Cath Lab؟', ['الحضور فقط', 'المعرفة + اتخاذ القرار + الكفاءة الملاحظة', 'وقت مشاهدة الفيديو فقط'], 1],
-      ['من ينسق Timeout؟', ['Circulating nurse بمشاركة الفريق الكامل', 'أسرة المريض', 'Recovery nurse فقط'], 0],
-      ['بعد Femoral cath، ما الأمر الأساسي؟', ['تقييم موقع الدخول وNeurovascular الطرفي', 'المشي المباشر بدون تقييم', 'إزالة كل التوثيق'], 0],
-      ['ما قيمة AR/VR في تدريب Cath Lab؟', ['ممارسة آمنة ومتكررة للحالات النادرة عالية الخطورة', 'استبدال كل الإشراف السريري', 'إلغاء تقييم الكفاءات'], 0]
     ],
     roadmap: [['المرحلة 1', 'موقع رسمي + كتالوج تدريب', 'جاهز'], ['المرحلة 2', 'حسابات مستخدمين + لوحة مدرب', 'التالي'], ['المرحلة 3', 'قاعدة بيانات وشهادات وتحليلات', 'التالي'], ['المرحلة 4', 'مجسم GLB و WebXR/AR markers', 'متقدم'], ['المرحلة 5', 'تكامل LMS للمستشفى', 'مؤسسي']]
   }
@@ -191,8 +187,13 @@ function Stat({ icon: Icon, value, label, note }) {
   return <div className="stat"><Icon /><strong>{value}</strong><span>{label}</span><small>{note}</small></div>;
 }
 
+function ExecutiveOverview({ t }) {
+  const icons = [Users, ClipboardCheck, Brain];
+  return <section className="executive-overview"><div className="overview-copy"><p className="eyebrow">Executive Overview</p><h2>{t.overviewTitle}</h2><p>{t.overviewText}</p><div className="quality-badges">{t.qualityBadges.map(badge => <span key={badge}><ShieldCheck /> {badge}</span>)}</div></div><div className="overview-grid">{t.overviewCards.map(([title, text], i) => { const Icon = icons[i]; return <div className="overview-card" key={title}><Icon /><h3>{title}</h3><p>{text}</p></div>; })}</div></section>;
+}
+
 function TopNav({ t, lang, setLang }) {
-  const hrefs = ['#home', '#modules', '#simulation', '#assessment', '#launch'];
+  const hrefs = ['#home', '#modules', '#simulation', '#launch'];
   return <nav className="topnav"><a className="brand" href="#home"><HeartPulse /> Cath Lab Academy</a><div className="nav-links">{t.nav.map((label, i) => <a key={hrefs[i]} href={hrefs[i]}>{label}</a>)}<button className="language-toggle" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}><Globe2 /> {t.switchTo}</button></div></nav>;
 }
 
@@ -235,12 +236,17 @@ function Simulation({ t }) {
   return <section id="simulation" className="section simulation-grid"><HeartModel t={t} /><div className="glass-card scenario-card"><div className="card-title"><PlayCircle /> {t.simulationTitle}</div><div className="timeline">{t.scenarios.map((_, i) => <button key={i} className={i === index ? 'active' : ''} onClick={() => setIndex(i)}>{i + 1}</button>)}</div><div className="priority">{s.priority}</div><h3>{s.title}</h3><b className="ar-label">{s.subtitle}</b><p>{s.prompt}</p><div className="decision"><strong>{s.question}</strong>{s.choices.map((choice, i) => { const selected = answers[index] === i; const revealed = answers[index] !== undefined; const correct = i === s.answer; return <button className={`${selected ? 'selected' : ''} ${revealed && correct ? 'correct' : ''} ${revealed && selected && !correct ? 'wrong' : ''}`} key={choice} onClick={() => setAnswers({...answers, [index]: i})}>{revealed && correct ? <CheckCircle2 /> : revealed && selected && !correct ? <XCircle /> : <ChevronLeft />}{choice}</button>; })}</div>{answers[index] !== undefined && <p className="feedback">{s.why}</p>}<div className="score"><Trophy /> {t.simulationScore} {score}/{t.scenarios.length}</div></div></section>;
 }
 
-function Assessment({ t, checks }) {
-  const [answers, setAnswers] = usePersistedState('cathlab-quiz-answers', {});
-  const score = t.quiz.reduce((acc, q, i) => acc + (answers[i] === q[2] ? 1 : 0), 0);
+function printCertificate() {
+  document.body.classList.add('print-certificate-only');
+  window.print();
+  window.setTimeout(() => document.body.classList.remove('print-certificate-only'), 500);
+}
+
+function CertificatePreview({ t, checks }) {
   const completedCompetencies = Object.values(checks).filter(Boolean).length;
   const totalCompetencies = t.modules.reduce((acc, m) => acc + m.competencies.length, 0);
-  return <section id="assessment" className="section assessment"><div><p className="eyebrow">{t.assessmentEngine}</p><h2>{t.assessmentTitle}</h2></div><div className="assessment-grid"><div className="quiz-card">{t.quiz.map(([q, options, answer], i) => <div className="question" key={q}><b>{i + 1}. {q}</b>{options.map((o, j) => <label key={o} className={`${answers[i] === j ? 'selected' : ''} ${answers[i] !== undefined && j === answer ? 'correct' : ''}`}><input type="radio" checked={answers[i] === j} onChange={() => setAnswers({...answers, [i]: j})} />{o}</label>)}</div>)}</div><div className="certificate"><Award /><h3>{t.certificateTitle}</h3><p>{t.knowledgeScore}: <b>{score}/{t.quiz.length}</b></p><p>{t.competencyCompletion}: <b>{completedCompetencies}/{totalCompetencies}</b></p><p>{t.status}: <b>{score >= 3 && completedCompetencies >= 8 ? t.readyStatus : t.progressStatus}</b></p><button onClick={() => window.print()}><Printer /> {t.print}</button></div></div></section>;
+  const status = completedCompetencies >= 8 ? t.readyStatus : t.progressStatus;
+  return <section id="certificate" className="section certificate-section"><div className="certificate"><Award /><h3>{t.certificateTitle}</h3><p>{t.competencyValidation}: <b>{completedCompetencies}/{totalCompetencies}</b></p><p>{t.status}: <b>{status}</b></p><button onClick={printCertificate}><Printer /> {t.savePdf}</button></div></section>;
 }
 
 function LaunchReadiness({ t }) {
@@ -260,7 +266,7 @@ function App() {
     document.title = lang === 'en' ? 'Cath Lab Academy | AR/VR Training Platform' : 'أكاديمية القسطرة القلبية | منصة تدريب AR/VR';
   }, [lang, t.dir]);
 
-  return <><TopNav t={t} lang={lang} setLang={setLang} /><main id="home" className={lang === 'ar' ? 'rtl' : 'ltr'}><section className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#modules">{t.explore}</a><button onClick={() => window.print()}><Download /> {t.savePdf}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} /><Assessment t={t} checks={checks} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  return <><TopNav t={t} lang={lang} setLang={setLang} /><main id="home" className={lang === 'ar' ? 'rtl' : 'ltr'}><section className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#modules">{t.explore}</a><button onClick={printCertificate}><Download /> {t.savePdf}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} /><CertificatePreview t={t} checks={checks} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
