@@ -36,6 +36,7 @@ import {
   View,
   XCircle
 } from 'lucide-react';
+import { programInfo } from './programInfo.js';
 import './styles.css';
 
 const content = {
@@ -63,28 +64,6 @@ const content = {
     trainingCatalogTitle: 'Training Catalog',
     trainingCatalogText: 'Agenda-ready section. When you send the final agenda, it will be added here as official courses, sessions, dates, duration, target audience, and learning outcomes.',
     agendaPending: 'Agenda pending from owner',
-    diplomaEyebrow: 'SCFHS Diploma Curriculum',
-    diplomaTitle: 'CCL Nursing Diploma — two-year professional pathway',
-    diplomaText: 'A website-ready curriculum section derived from the comprehensive SCFHS CCL Nursing Diploma document: adult and pediatric cath lab practice, competency-based progression, structured rotations, simulation, assessment, and logbook governance.',
-    diplomaHighlights: [
-      ['2 years', 'Full-time diploma', '52 weeks per year with clinical rotations, academic weeks, and annual leave.'],
-      ['14 modules', 'Curriculum map', 'Foundation, diagnostics, pharmacology, PCI, MCS, EP, structural heart, and pediatric CCL.'],
-      ['5 roles', 'CCL nursing practice', 'Circulating, scrub, monitoring, charge, and recovery nurse competencies.'],
-      ['L1–L5', 'Competency levels', 'Observer to independent practice using a supervision-based progression model.']
-    ],
-    diplomaDomains: [
-      'Cardiac nursing foundation and cardiovascular assessment',
-      'CCL technical competency across five nursing roles',
-      'Adult and pediatric interventional cardiology exposure',
-      'Radiation safety, quality improvement, leadership, and research'
-    ],
-    diplomaYears: [
-      { year: 'Year 1 — Foundation & Core CCL', total: '43 clinical + 8 academic + 5 leave weeks', rotations: ['Hospital & CCL orientation — 2 weeks', 'CCU / medical cardiology — 7 weeks', 'Non-invasive cardiology — 5 weeks', 'Pre/post procedure care — 7 weeks', 'Diagnostic catheterization — 9 weeks'] },
-      { year: 'Year 2 — Advanced Specialization', total: '45 clinical + 2 academic + 5 leave weeks', rotations: ['Advanced diagnostic/hemodynamics — 8 weeks', 'PCI — 9 weeks', 'Mechanical circulatory support — 4 weeks', 'EP & cardiac devices — 6 weeks', 'Structural heart — 5 weeks', 'Pediatric CCL — 6 weeks'] }
-    ],
-    diplomaModules: ['CV Anatomy & Physiology', 'CV Assessment & Non-Invasive Diagnostics', 'CV Pharmacology in the CCL', 'Five CCL Nurse Roles', 'Radiation Safety', 'Pre/Post Procedural Care', 'Ethics', 'Advanced Diagnostic Cath', 'Hemodynamic Monitoring', 'PCI', 'MCS: IABP/Impella/ECMO', 'EP & Device Therapy', 'Structural Heart', 'Pediatric CCL Nursing'],
-    diplomaSimulation: ['Cardiac arrest during fluoroscopy/PCI', 'Severe contrast media anaphylaxis', 'STEMI primary PCI activation', 'IABP malfunction troubleshooting', 'Hemodynamic collapse with MCS escalation', 'Coronary perforation/tamponade', 'VA-ECMO initiation / ECPR', 'Pediatric cardiac arrest in CCL', 'Device complication management', 'TAVI complication and emergency pacing'],
-    diplomaAssessment: ['Written quizzes after modules', 'DOPS for five CCL roles', 'Mini-CEX every rotation', 'Procedure logbook by category', 'CBD and oral presentations', 'Final written exam, OSCE, and SOE'],
     dashboardTitle: 'Trainer / Admin Dashboard',
     dashboardText: 'A professional management view for training governance, competency status, simulation results, and certificate readiness.',
     loginTitle: 'Secure Login Prototype',
@@ -178,28 +157,6 @@ const content = {
     trainingCatalogTitle: 'كتالوج التدريب',
     trainingCatalogText: 'قسم جاهز لإضافة الأجندة. عندما ترسل الأجندة النهائية سيتم تحويلها إلى دورات وجلسات رسمية مع التاريخ والمدة والفئة المستهدفة ومخرجات التعلم.',
     agendaPending: 'بانتظار الأجندة من مالك المشروع',
-    diplomaEyebrow: 'منهج دبلوم SCFHS',
-    diplomaTitle: 'دبلوم تمريض قسطرة القلب — مسار مهني لمدة سنتين',
-    diplomaText: 'قسم جاهز للموقع مبني على ملف منهج CCL Nursing Diploma: تدريب قسطرة للبالغين والأطفال، كفاءات متدرجة، دورات سريرية، محاكاة، تقييم، وسجل إجراءات.',
-    diplomaHighlights: [
-      ['سنتان', 'دبلوم بدوام كامل', '52 أسبوعًا لكل سنة تشمل دورات سريرية وأسابيع أكاديمية وإجازات.'],
-      ['14 Module', 'خريطة منهجية', 'أساسيات، تشخيص، أدوية، PCI، دعم دوران، EP، Structural، وقسطرة أطفال.'],
-      ['5 أدوار', 'أدوار تمريض القسطرة', 'Circulating وScrub وMonitoring وCharge وRecovery.'],
-      ['L1–L5', 'مستويات الكفاءة', 'من الملاحظة إلى الممارسة المستقلة بنموذج إشراف متدرج.']
-    ],
-    diplomaDomains: [
-      'أساسيات تمريض القلب والتقييم القلبي الوعائي',
-      'كفاءات CCL التقنية عبر أدوار التمريض الخمسة',
-      'تدريب قسطرة للبالغين والأطفال والتداخلات المتقدمة',
-      'السلامة الإشعاعية، الجودة، القيادة، والبحث العلمي'
-    ],
-    diplomaYears: [
-      { year: 'السنة الأولى — Foundation & Core CCL', total: '43 أسبوعًا سريريًا + 8 أكاديمي + 5 إجازة', rotations: ['تهيئة المستشفى والقسطرة — أسبوعان', 'CCU / Medical Cardiology — 7 أسابيع', 'Non-invasive cardiology — 5 أسابيع', 'رعاية ما قبل/بعد الإجراء — 7 أسابيع', 'Diagnostic catheterization — 9 أسابيع'] },
-      { year: 'السنة الثانية — Advanced Specialization', total: '45 أسبوعًا سريريًا + 2 أكاديمي + 5 إجازة', rotations: ['Advanced diagnostics/hemodynamics — 8 أسابيع', 'PCI — 9 أسابيع', 'Mechanical circulatory support — 4 أسابيع', 'EP & cardiac devices — 6 أسابيع', 'Structural heart — 5 أسابيع', 'Pediatric CCL — 6 أسابيع'] }
-    ],
-    diplomaModules: ['CV Anatomy & Physiology', 'CV Assessment & Non-Invasive Diagnostics', 'CV Pharmacology in the CCL', 'Five CCL Nurse Roles', 'Radiation Safety', 'Pre/Post Procedural Care', 'Ethics', 'Advanced Diagnostic Cath', 'Hemodynamic Monitoring', 'PCI', 'MCS: IABP/Impella/ECMO', 'EP & Device Therapy', 'Structural Heart', 'Pediatric CCL Nursing'],
-    diplomaSimulation: ['Cardiac arrest أثناء fluoroscopy/PCI', 'Severe contrast media anaphylaxis', 'STEMI primary PCI activation', 'IABP malfunction troubleshooting', 'Hemodynamic collapse مع MCS escalation', 'Coronary perforation/tamponade', 'VA-ECMO initiation / ECPR', 'Pediatric cardiac arrest in CCL', 'Device complication management', 'TAVI complication and emergency pacing'],
-    diplomaAssessment: ['اختبارات تحريرية بعد Modules', 'DOPS لأدوار CCL الخمسة', 'Mini-CEX في كل Rotation', 'Procedure logbook حسب الفئة', 'CBD وعروض شفوية', 'Final written exam وOSCE وSOE'],
     dashboardTitle: 'لوحة المدرب / الإدارة',
     dashboardText: 'واجهة إدارة احترافية لحوكمة التدريب، حالة الكفاءات، نتائج المحاكاة، وجاهزية الشهادات.',
     loginTitle: 'نموذج تسجيل دخول آمن',
@@ -268,7 +225,7 @@ function Stat({ icon: Icon, value, label, note }) {
 }
 
 function TopNav({ t, lang, setLang }) {
-  const hrefs = ['#home', '#about', '#catalog', '#diploma', '#dashboard', '#login', '#certificate'];
+  const hrefs = ['#home', '#about', '#catalog', '/program.html', '#dashboard', '#login', '#certificate'];
   return <nav className="topnav"><a className="brand" href="#home"><HeartPulse /> Cath Lab Academy</a><div className="nav-links">{t.nav.map((label, i) => <a key={hrefs[i]} href={hrefs[i]}>{label}</a>)}<button className="language-toggle" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}><Globe2 /> {t.switchTo}</button></div></nav>;
 }
 
@@ -286,19 +243,14 @@ function TrainingCatalog({ t }) {
 }
 
 
-function DiplomaSection({ t }) {
-  return <section id="diploma" className="section diploma-section">
-    <p className="eyebrow">{t.diplomaEyebrow}</p>
-    <h2>{t.diplomaTitle}</h2>
-    <p className="section-lead">{t.diplomaText}</p>
-    <div className="diploma-highlights">{t.diplomaHighlights.map(([value, label, note]) => <div className="dash-card" key={label}><GraduationCap /><strong>{value}</strong><span>{label}</span><small>{note}</small></div>)}</div>
-    <div className="diploma-layout">
-      <div className="glass-card"><div className="card-title"><Target /> Program outcome domains</div>{t.diplomaDomains.map(x => <div className="check" key={x}><CheckCircle2 /> {x}</div>)}</div>
-      <div className="glass-card"><div className="card-title"><ClipboardCheck /> Assessment & validation</div>{t.diplomaAssessment.map(x => <div className="check" key={x}><FileCheck2 /> {x}</div>)}</div>
-    </div>
-    <div className="diploma-years">{t.diplomaYears.map(y => <article className="overview-card" key={y.year}><h3>{y.year}</h3><p><b>{y.total}</b></p><ul>{y.rotations.map(r => <li key={r}>{r}</li>)}</ul></article>)}</div>
-    <div className="glass-card diploma-modules"><div className="card-title"><BookOpen /> 14 curriculum modules</div><div>{t.diplomaModules.map((m, i) => <span key={m}>{String(i + 1).padStart(2, '0')} — {m}</span>)}</div></div>
-    <div className="glass-card diploma-simulation"><div className="card-title"><Brain /> Mandatory high-fidelity simulation scenarios</div><div>{t.diplomaSimulation.map((m, i) => <span key={m}>{i + 1}. {m}</span>)}</div></div>
+function ProgramInfoTeaser({ lang }) {
+  const t = programInfo[lang] || programInfo.en;
+  return <section id="program" className="section diploma-section program-teaser">
+    <p className="eyebrow">{t.eyebrow}</p>
+    <h2>{t.title}</h2>
+    <p className="section-lead">{t.subtitle}</p>
+    <div className="diploma-highlights">{t.highlights.map(([value, label, note]) => <a className="dash-card" href="/program.html" key={label}><GraduationCap /><strong>{value}</strong><span>{label}</span><small>{note}</small></a>)}</div>
+    <div className="hero-actions"><a href="/program.html">{t.cta}</a></div>
   </section>;
 }
 
@@ -383,7 +335,7 @@ function App() {
     document.title = lang === 'en' ? 'Cath Lab Academy | Professional Training Platform' : 'أكاديمية القسطرة القلبية | منصة تدريب احترافية';
   }, [lang, t.dir]);
 
-  return <><TopNav t={t} lang={lang} setLang={setLang} /><main id="home" className={lang === 'ar' ? 'rtl' : 'ltr'}><section className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#about">{t.explore}</a><button onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} /><DiplomaSection t={t} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} /><LoginPrototype t={t} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} /><CertificatePreview t={t} checks={checks} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  return <><TopNav t={t} lang={lang} setLang={setLang} /><main id="home" className={lang === 'ar' ? 'rtl' : 'ltr'}><section className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#about">{t.explore}</a><button onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} /><LoginPrototype t={t} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} /><CertificatePreview t={t} checks={checks} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
