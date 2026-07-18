@@ -28,8 +28,10 @@
 
 ## التشغيل محليًا
 
+التعليمات العربية المفصلة لـ Windows والجوال موجودة في [LOCAL_SETUP_AR.md](./LOCAL_SETUP_AR.md).
+
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -42,7 +44,7 @@ http://localhost:5173
 ## بناء نسخة للنشر
 
 ```bash
-npm run build
+npm run check
 ```
 
 ملفات النشر ستكون داخل:
@@ -84,6 +86,8 @@ dist
 5. اعتماد آلية trainer sign-off.
 
 ## التطوير القادم
+
+المراجعة التقنية وخطة الأولويات موجودة في [PROJECT_REVIEW_AR.md](./PROJECT_REVIEW_AR.md).
 
 - Supabase/Firebase authentication.
 - Trainer dashboard حقيقي.
