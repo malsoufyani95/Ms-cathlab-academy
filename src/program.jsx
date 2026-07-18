@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   ArrowLeft,
@@ -16,25 +16,25 @@ import {
   Users
 } from 'lucide-react';
 import { programInfo } from './programInfo.js';
+import { usePersistedState } from './usePersistedState.js';
 import './styles.css';
 
 function ProgramPage() {
-  const [lang, setLang] = useState(() => localStorage.getItem('cathlab-language') || 'en');
+  const [lang, setLang] = usePersistedState('cathlab-language', 'en');
   const t = programInfo[lang] || programInfo.en;
 
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = t.dir;
     document.title = lang === 'ar' ? 'معلومات برنامج دبلوم تمريض القسطرة' : 'CCL Nursing Diploma Program Information';
-    localStorage.setItem('cathlab-language', lang);
   }, [lang, t.dir]);
 
   return <main className={`program-page ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
     <nav className="topnav program-nav">
-      <a className="brand" href="/"><HeartPulse /> Cath Lab Academy</a>
-      <div className="nav-links">
-        <a href="/"><ArrowLeft /> {t.homeLabel}</a>
-        <button className="language-toggle" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}><Globe2 /> {t.languageLabel}</button>
+      <a className="brand" href="./"><HeartPulse /> Cath Lab Academy</a>
+      <div className="nav-links program-nav-links">
+        <a href="./"><ArrowLeft /> {t.homeLabel}</a>
+        <button className="language-toggle" type="button" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}><Globe2 /> {t.languageLabel}</button>
       </div>
     </nav>
 
@@ -50,9 +50,9 @@ function ProgramPage() {
         <h2>{t.highlights[0][0]}</h2>
         <p>{t.highlights[0][1]}</p>
         <div className="mini-dashboard">
-          <span>14<small>Modules</small></span>
-          <span>5<small>Roles</small></span>
-          <span>L1–L5<small>Levels</small></span>
+          <span>14<small>{lang === 'ar' ? 'وحدة' : 'Modules'}</small></span>
+          <span>5<small>{lang === 'ar' ? 'أدوار' : 'Roles'}</small></span>
+          <span>L1–L5<small>{lang === 'ar' ? 'مستويات' : 'Levels'}</small></span>
         </div>
       </div>
     </section>

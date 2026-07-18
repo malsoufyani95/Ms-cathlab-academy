@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   Activity,
@@ -6,7 +6,6 @@ import {
   BarChart3,
   BookOpen,
   Brain,
-  BriefcaseMedical,
   Building2,
   CalendarDays,
   Camera,
@@ -20,8 +19,8 @@ import {
   HeartPulse,
   Hospital,
   IdCard,
-  LayoutDashboard,
   LockKeyhole,
+  Menu,
   Monitor,
   PlayCircle,
   Printer,
@@ -34,9 +33,11 @@ import {
   UserRound,
   Users,
   View,
+  X,
   XCircle
 } from 'lucide-react';
 import { programInfo } from './programInfo.js';
+import { usePersistedState } from './usePersistedState.js';
 import './styles.css';
 
 const content = {
@@ -49,7 +50,7 @@ const content = {
     explore: 'Explore the platform',
     printCertificate: 'Print Certificate',
     os: 'Clinical Training OS',
-    signed: 'Validated',
+    signed: 'Completed',
     executiveOverview: 'Executive Overview',
     overviewTitle: 'Built for clinical training governance',
     overviewText: 'A structured training experience that connects education, simulation, observed competency, trainer sign-off, and readiness reporting in one modern Cath Lab Academy interface.',
@@ -61,13 +62,13 @@ const content = {
     mission: 'Mission',
     missionText: 'To deliver clear training pathways, practical simulations, trainer-led competency validation, and accessible bilingual learning resources for every Cath Lab role.',
     values: ['Patient safety first', 'Role-based development', 'Trainer-led validation', 'Continuous improvement'],
-    trainingCatalogTitle: 'Training Catalog',
-    trainingCatalogText: 'Agenda-ready section. When you send the final agenda, it will be added here as official courses, sessions, dates, duration, target audience, and learning outcomes.',
-    agendaPending: 'Agenda pending from owner',
-    dashboardTitle: 'Trainer / Admin Dashboard',
-    dashboardText: 'A professional management view for training governance, competency status, simulation results, and certificate readiness.',
-    loginTitle: 'Secure Login Prototype',
-    loginText: 'Visual login interface for future trainee, trainer, and admin accounts. Authentication and database integration can be added in the next technical phase.',
+    trainingCatalogTitle: 'Core Learning Catalog',
+    trainingCatalogText: 'Four practical starting pathways for Cath Lab onboarding and continuous development. Dates and trainer-led sessions can be added when the approved agenda is ready.',
+    agendaPending: 'Role-based learning paths',
+    dashboardTitle: 'Learning Progress Dashboard',
+    dashboardText: 'Your competency checklist, simulation score, and certificate readiness are calculated from activity saved on this device.',
+    loginTitle: 'Secure account access — planned',
+    loginText: 'This screen shows the planned trainee, trainer, and administrator access model. It remains disabled until secure authentication and a database are connected.',
     modulesTitle: 'Official role-based training pathways',
     trainingArchitecture: 'Training Architecture',
     curriculum: 'Curriculum Pathway',
@@ -104,16 +105,10 @@ const content = {
       ['Simulation readiness', 'Interactive STEMI and complication scenarios to standardize decision-making practice.']
     ],
     catalogCourses: [
-      ['Foundation', 'Cath Lab Orientation', 'Core safety, lab workflow, roles, terminology, and patient journey.', 'All new staff', 'Agenda to be added'],
-      ['Nursing', 'Recovery & Access Site Care', 'Post-procedure monitoring, radial/femoral management, complications, and discharge readiness.', 'Recovery nurses', 'Agenda to be added'],
-      ['Procedure Room', 'Circulating & Scrub Essentials', 'Room readiness, sterile field, device verification, documentation, and emergency support.', 'Cath Lab team', 'Agenda to be added'],
-      ['Quality', 'Competency & CPD Governance', 'Competency matrix, audit readiness, incident learning, and trainer sign-off workflow.', 'Trainers / leaders', 'Agenda to be added']
-    ],
-    dashboardCards: [
-      ['84%', 'Overall training completion', 'Across current staff cohort'],
-      ['12', 'Pending sign-offs', 'Awaiting trainer validation'],
-      ['91%', 'Simulation pass rate', 'STEMI and complications'],
-      ['28', 'Certificates ready', 'Eligible for printing']
+      ['Foundation', 'Cath Lab Orientation', 'Core safety, lab workflow, roles, terminology, and patient journey.', 'All new staff', 'Self-paced • 2 hours'],
+      ['Nursing', 'Recovery & Access Site Care', 'Post-procedure monitoring, radial/femoral management, complications, and discharge readiness.', 'Recovery nurses', 'Self-paced • 3 hours'],
+      ['Procedure Room', 'Circulating & Scrub Essentials', 'Room readiness, sterile field, device verification, documentation, and emergency support.', 'Cath Lab team', 'Blended • 4 hours'],
+      ['Quality', 'Competency & CPD Governance', 'Competency matrix, audit readiness, incident learning, and trainer sign-off workflow.', 'Trainers / leaders', 'Workshop • 2 hours']
     ],
     launchCards: [
       ['Governance', 'Medical disclaimer, content review, internal approval, and trainer permissions before official use.'],
@@ -142,7 +137,7 @@ const content = {
     explore: 'استعراض المنصة',
     printCertificate: 'طباعة الشهادة',
     os: 'نظام التدريب السريري',
-    signed: 'معتمدة',
+    signed: 'مكتملة',
     executiveOverview: 'ملخص تنفيذي',
     overviewTitle: 'مصمم لحوكمة التدريب السريري',
     overviewText: 'تجربة تدريب منظمة تربط التعليم، المحاكاة، تقييم الكفاءات، اعتماد المدرب، وتقارير الجاهزية في واجهة حديثة لمنصة Cath Lab Academy.',
@@ -154,13 +149,13 @@ const content = {
     mission: 'الرسالة',
     missionText: 'تقديم مسارات تدريب واضحة، محاكاة عملية، اعتماد كفاءات بإشراف المدربين، ومصادر تعليمية ثنائية اللغة لجميع أدوار Cath Lab.',
     values: ['سلامة المريض أولًا', 'تطوير حسب الدور', 'اعتماد بإشراف المدرب', 'تحسين مستمر'],
-    trainingCatalogTitle: 'كتالوج التدريب',
-    trainingCatalogText: 'قسم جاهز لإضافة الأجندة. عندما ترسل الأجندة النهائية سيتم تحويلها إلى دورات وجلسات رسمية مع التاريخ والمدة والفئة المستهدفة ومخرجات التعلم.',
-    agendaPending: 'بانتظار الأجندة من مالك المشروع',
-    dashboardTitle: 'لوحة المدرب / الإدارة',
-    dashboardText: 'واجهة إدارة احترافية لحوكمة التدريب، حالة الكفاءات، نتائج المحاكاة، وجاهزية الشهادات.',
-    loginTitle: 'نموذج تسجيل دخول آمن',
-    loginText: 'واجهة مرئية مستقبلية لحسابات المتدربين والمدربين والإدارة. يمكن إضافة المصادقة وقاعدة البيانات في المرحلة التقنية القادمة.',
+    trainingCatalogTitle: 'كتالوج التعلم الأساسي',
+    trainingCatalogText: 'أربعة مسارات عملية لتهيئة فريق القسطرة والتطوير المستمر. يمكن إضافة التواريخ والجلسات بإشراف المدرب عند اعتماد الأجندة.',
+    agendaPending: 'مسارات تعلم حسب الدور',
+    dashboardTitle: 'لوحة تقدم المتدرب',
+    dashboardText: 'تُحسب الكفاءات ونتيجة المحاكاة وجاهزية الشهادة من النشاط المحفوظ على هذا الجهاز.',
+    loginTitle: 'الوصول الآمن للحساب — مخطط له',
+    loginText: 'تعرض هذه الواجهة نموذج حسابات المتدربين والمدربين والإدارة، وتبقى معطلة حتى ربط مصادقة آمنة وقاعدة بيانات.',
     modulesTitle: 'مسارات تدريب رسمية حسب الدور الوظيفي',
     trainingArchitecture: 'هيكلة التدريب',
     curriculum: 'المسار التعليمي',
@@ -187,8 +182,7 @@ const content = {
     footer: 'نموذج Cath Lab Academy — للتعليم وتقييم الكفاءات فقط، وليس بديلًا عن سياسات المستشفى أو الحكم السريري.',
     stats: [['4', 'مسارات تدريب', 'تعليم حسب الدور'], ['3', 'سيناريوهات سريرية', 'تدريب اتخاذ القرار'], ['20', 'كفاءة', 'اعتماد المدرب'], ['AR/VR', 'جاهز للمستقبل', 'مسار WebXR']],
     overviewCards: [['تهيئة حسب الدور', 'مسارات Recovery وCirculating وScrub والجودة مع مستويات تقدم واضحة.'], ['إثبات الكفاءة', 'اعتماد مبني على قوائم تحقق يدعم مراجعة المدرب وسجلات القسم.'], ['جاهزية المحاكاة', 'سيناريوهات STEMI والمضاعفات لتوحيد التدريب على اتخاذ القرار.']],
-    catalogCourses: [['تأسيسي', 'Cath Lab Orientation', 'السلامة الأساسية، سير العمل، الأدوار، المصطلحات، ورحلة المريض.', 'جميع الموظفين الجدد', 'تضاف الأجندة لاحقًا'], ['تمريض', 'Recovery & Access Site Care', 'مراقبة ما بعد الإجراء، إدارة Radial/Femoral، المضاعفات، وجاهزية الخروج.', 'ممرضو الإفاقة', 'تضاف الأجندة لاحقًا'], ['غرفة الإجراء', 'Circulating & Scrub Essentials', 'جاهزية الغرفة، الحقل المعقم، التحقق من الأجهزة، التوثيق، ودعم الطوارئ.', 'فريق Cath Lab', 'تضاف الأجندة لاحقًا'], ['جودة', 'Competency & CPD Governance', 'مصفوفة الكفاءات، جاهزية التدقيق، التعلم من الحوادث، واعتماد المدرب.', 'المدربون والقادة', 'تضاف الأجندة لاحقًا']],
-    dashboardCards: [['84%', 'اكتمال التدريب العام', 'للمجموعة الحالية'], ['12', 'اعتمادات معلقة', 'بانتظار اعتماد المدرب'], ['91%', 'نسبة اجتياز المحاكاة', 'STEMI والمضاعفات'], ['28', 'شهادات جاهزة', 'مؤهلة للطباعة']],
+    catalogCourses: [['تأسيسي', 'Cath Lab Orientation', 'السلامة الأساسية، سير العمل، الأدوار، المصطلحات، ورحلة المريض.', 'جميع الموظفين الجدد', 'ذاتي • ساعتان'], ['تمريض', 'Recovery & Access Site Care', 'مراقبة ما بعد الإجراء، إدارة Radial/Femoral، المضاعفات، وجاهزية الخروج.', 'ممرضو الإفاقة', 'ذاتي • 3 ساعات'], ['غرفة الإجراء', 'Circulating & Scrub Essentials', 'جاهزية الغرفة، الحقل المعقم، التحقق من الأجهزة، التوثيق، ودعم الطوارئ.', 'فريق Cath Lab', 'مدمج • 4 ساعات'], ['جودة', 'Competency & CPD Governance', 'مصفوفة الكفاءات، جاهزية التدقيق، التعلم من الحوادث، واعتماد المدرب.', 'المدربون والقادة', 'ورشة • ساعتان']],
     launchCards: [['الحوكمة', 'تنبيه طبي، مراجعة محتوى، اعتماد داخلي، وصلاحيات مدربين قبل الاستخدام الرسمي.'], ['النشر', 'جاهز للنشر على Vercel/Netlify، ثم ربط دومين رسمي وشهادة SSL.'], ['التحليلات', 'المرحلة القادمة تضيف متابعة أداء المتدربين ونتائج الكفاءات حسب القسم.']],
     modules: [
       { id: 'recovery', title: 'Recovery Nurse', subtitle: 'تمريض الإفاقة بعد القسطرة', icon: Stethoscope, level: 'تأسيسي → كفء', duration: '4 أسابيع', outcomes: ['مراقبة ما بعد القسطرة', 'العناية بموقع الدخول', 'الاستجابة المبكرة للمضاعفات'], lessons: ['تسليم SBAR', 'تقييم Radial/Femoral', 'فحص Neurovascular', 'مسار النزيف والورم الدموي', 'جاهزية الخروج'], competencies: ['تم التحقق من الهوية والحساسية', 'تم تقييم موقع الدخول', 'تم توثيق النبضات الطرفية', 'تمت متابعة الألم والعلامات الحيوية', 'تم التصعيد بصيغة SBAR'] },
@@ -205,19 +199,25 @@ const content = {
   }
 };
 
-function usePersistedState(key, initialValue) {
-  const [state, setState] = useState(() => {
-    try {
-      const saved = localStorage.getItem(key);
-      return saved ? JSON.parse(saved) : initialValue;
-    } catch {
-      return initialValue;
-    }
-  });
-  useEffect(() => {
-    try { localStorage.setItem(key, JSON.stringify(state)); } catch { /* ignore private mode */ }
-  }, [key, state]);
-  return [state, setState];
+function competencyStorageKey(moduleId, index) {
+  return `${moduleId}:${index}`;
+}
+
+function legacyCompetencyKeys(moduleId, index) {
+  return ['en', 'ar'].map(lang => {
+    const module = content[lang].modules.find(item => item.id === moduleId);
+    return module?.competencies[index] ? `${moduleId}:${module.competencies[index]}` : null;
+  }).filter(Boolean);
+}
+
+function isCompetencyComplete(checks, moduleId, index) {
+  const stableKey = competencyStorageKey(moduleId, index);
+  if (Object.prototype.hasOwnProperty.call(checks, stableKey)) return !!checks[stableKey];
+  return legacyCompetencyKeys(moduleId, index).some(key => !!checks[key]);
+}
+
+function countCompletedCompetencies(checks) {
+  return content.en.modules.reduce((total, module) => total + module.competencies.reduce((moduleTotal, _, index) => moduleTotal + (isCompetencyComplete(checks, module.id, index) ? 1 : 0), 0), 0);
 }
 
 function Stat({ icon: Icon, value, label, note }) {
@@ -225,8 +225,17 @@ function Stat({ icon: Icon, value, label, note }) {
 }
 
 function TopNav({ t, lang, setLang }) {
-  const hrefs = ['#home', '#about', '#catalog', '/program.html', '#dashboard', '#login', '#certificate'];
-  return <nav className="topnav"><a className="brand" href="#home"><HeartPulse /> Cath Lab Academy</a><div className="nav-links">{t.nav.map((label, i) => <a key={hrefs[i]} href={hrefs[i]}>{label}</a>)}<button className="language-toggle" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}><Globe2 /> {t.switchTo}</button></div></nav>;
+  const [open, setOpen] = useState(false);
+  const hrefs = ['#home', '#about', '#catalog', './program.html', '#dashboard', '#login', '#certificate'];
+  const menuLabel = lang === 'ar' ? 'القائمة الرئيسية' : 'Main menu';
+  return <nav className="topnav" aria-label={menuLabel}>
+    <a className="brand" href="#home" onClick={() => setOpen(false)}><HeartPulse aria-hidden="true" /> Cath Lab Academy</a>
+    <button className="mobile-menu-toggle" type="button" aria-label={menuLabel} aria-expanded={open} aria-controls="primary-navigation" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
+    <div id="primary-navigation" className={`nav-links ${open ? 'open' : ''}`}>
+      {t.nav.map((label, i) => <a key={hrefs[i]} href={hrefs[i]} onClick={() => setOpen(false)}>{label}</a>)}
+      <button className="language-toggle" type="button" onClick={() => { setLang(lang === 'en' ? 'ar' : 'en'); setOpen(false); }}><Globe2 /> {t.switchTo}</button>
+    </div>
+  </nav>;
 }
 
 function ExecutiveOverview({ t }) {
@@ -249,25 +258,32 @@ function ProgramInfoTeaser({ lang }) {
     <p className="eyebrow">{t.eyebrow}</p>
     <h2>{t.title}</h2>
     <p className="section-lead">{t.subtitle}</p>
-    <div className="diploma-highlights">{t.highlights.map(([value, label, note]) => <a className="dash-card" href="/program.html" key={label}><GraduationCap /><strong>{value}</strong><span>{label}</span><small>{note}</small></a>)}</div>
-    <div className="hero-actions"><a href="/program.html">{t.cta}</a></div>
+    <div className="diploma-highlights">{t.highlights.map(([value, label, note]) => <a className="dash-card" href="./program.html" key={label}><GraduationCap /><strong>{value}</strong><span>{label}</span><small>{note}</small></a>)}</div>
+    <div className="hero-actions"><a href="./program.html">{t.cta}</a></div>
   </section>;
 }
 
-function Dashboard({ t, completed, totalCompetencies }) {
+function Dashboard({ t, completed, totalCompetencies, simulationScore, scenarioCount, certificateReady, onReset }) {
   const pct = totalCompetencies ? Math.round((completed / totalCompetencies) * 100) : 0;
-  const dashboardCards = [...t.dashboardCards];
-  dashboardCards[0] = [`${Math.max(pct, 84)}%`, dashboardCards[0][1], dashboardCards[0][2]];
-  return <section id="dashboard" className="section dashboard-section"><p className="eyebrow">Dashboard Prototype</p><h2>{t.dashboardTitle}</h2><p className="section-lead">{t.dashboardText}</p><div className="dashboard-grid">{dashboardCards.map(([value, label, note], i) => { const icons = [BarChart3, ClipboardCheck, Activity, Award]; const Icon = icons[i]; return <div className="dash-card" key={label}><Icon /><strong>{value}</strong><span>{label}</span><small>{note}</small></div>; })}</div><div className="dashboard-panel"><div><h3>Competency Matrix</h3><div className="progress-line"><span style={{ width: `${Math.max(pct, 72)}%` }} /></div><small>{completed}/{totalCompetencies} live checklist items completed in this demo</small></div><div className="mini-list"><span><CheckCircle2 /> Recovery pathway active</span><span><CheckCircle2 /> STEMI simulation enabled</span><span><CheckCircle2 /> Certificate printing ready</span></div></div></section>;
+  const simulationPct = scenarioCount ? Math.round((simulationScore / scenarioCount) * 100) : 0;
+  const rtl = t.dir === 'rtl';
+  const dashboardCards = rtl
+    ? [[`${pct}%`, 'اكتمال الكفاءات', `${completed} من ${totalCompetencies}`], [`${totalCompetencies - completed}`, 'كفاءات متبقية', 'محفوظة على هذا الجهاز'], [`${simulationPct}%`, 'نتيجة المحاكاة', `${simulationScore} من ${scenarioCount}`], [certificateReady ? 'جاهزة' : 'غير جاهزة', 'حالة الشهادة', 'تتطلب إكمال الكفاءات والمحاكاة']]
+    : [[`${pct}%`, 'Competency completion', `${completed} of ${totalCompetencies}`], [`${totalCompetencies - completed}`, 'Competencies remaining', 'Saved on this device'], [`${simulationPct}%`, 'Simulation score', `${simulationScore} of ${scenarioCount}`], [certificateReady ? 'Ready' : 'Not ready', 'Certificate status', 'Requires all competencies and scenarios']];
+  const matrixTitle = rtl ? 'مصفوفة الكفاءات' : 'Competency matrix';
+  const progressText = rtl ? `${completed}/${totalCompetencies} من عناصر قائمة الكفاءة مكتملة` : `${completed}/${totalCompetencies} competency checklist items completed`;
+  const resetLabel = rtl ? 'إعادة ضبط التقدم' : 'Reset progress';
+  return <section id="dashboard" className="section dashboard-section"><p className="eyebrow">{rtl ? 'متابعة مباشرة' : 'Live progress'}</p><h2>{t.dashboardTitle}</h2><p className="section-lead">{t.dashboardText}</p><div className="dashboard-grid">{dashboardCards.map(([value, label, note], i) => { const icons = [BarChart3, ClipboardCheck, Activity, Award]; const Icon = icons[i]; return <div className="dash-card" key={label}><Icon /><strong>{value}</strong><span>{label}</span><small>{note}</small></div>; })}</div><div className="dashboard-panel"><div><h3>{matrixTitle}</h3><div className="progress-line" role="progressbar" aria-label={matrixTitle} aria-valuemin="0" aria-valuemax="100" aria-valuenow={pct}><span style={{ width: `${pct}%` }} /></div><small>{progressText}</small></div><div className="mini-list"><span><CheckCircle2 /> {rtl ? 'التقدم محفوظ محليًا' : 'Progress saved locally'}</span><span><CheckCircle2 /> {rtl ? 'المحاكاة التفاعلية مفعّلة' : 'Interactive simulation enabled'}</span><button className="text-button danger-button" type="button" onClick={onReset}><RotateCcw /> {resetLabel}</button></div></div></section>;
 }
 
 function LoginPrototype({ t }) {
-  return <section id="login" className="section login-section"><div className="login-copy"><p className="eyebrow">Account Access</p><h2>{t.loginTitle}</h2><p>{t.loginText}</p><div className="role-tabs"><span>Trainee</span><span>Trainer</span><span>Admin</span></div></div><form className="login-card" onSubmit={e => e.preventDefault()}><div className="login-logo"><LockKeyhole /><b>Cath Lab Academy</b></div><label><span>Email / Staff ID</span><div><UserRound /><input value="trainer@cathlab.academy" readOnly /></div></label><label><span>Password</span><div><ShieldCheck /><input value="••••••••••" readOnly /></div></label><button><IdCard /> Sign in preview</button><small>Prototype only — backend authentication not connected yet.</small></form></section>;
+  const rtl = t.dir === 'rtl';
+  return <section id="login" className="section login-section"><div className="login-copy"><p className="eyebrow">{rtl ? 'الوصول للحساب' : 'Account access'}</p><h2>{t.loginTitle}</h2><p>{t.loginText}</p><div className="role-tabs"><span>{rtl ? 'متدرب' : 'Trainee'}</span><span>{rtl ? 'مدرب' : 'Trainer'}</span><span>{rtl ? 'إدارة' : 'Admin'}</span></div></div><form className="login-card" onSubmit={e => e.preventDefault()} aria-label={t.loginTitle}><div className="login-logo"><LockKeyhole /><b>Cath Lab Academy</b></div><label><span>{rtl ? 'البريد أو الرقم الوظيفي' : 'Email / Staff ID'}</span><div><UserRound /><input type="email" placeholder={rtl ? 'سيُفعّل بعد ربط قاعدة البيانات' : 'Available after database setup'} disabled /></div></label><label><span>{rtl ? 'كلمة المرور' : 'Password'}</span><div><ShieldCheck /><input type="password" placeholder="••••••••" disabled /></div></label><button type="button" disabled><IdCard /> {rtl ? 'تسجيل الدخول — المرحلة القادمة' : 'Sign in — next phase'}</button><small>{rtl ? 'واجهة توضيحية فقط — لم يتم ربط المصادقة أو قاعدة البيانات.' : 'Interface preview only — authentication and database are not connected.'}</small></form></section>;
 }
 
 function ModuleCard({ module, active, onClick }) {
   const Icon = module.icon;
-  return <button className={`module-card ${active ? 'active' : ''}`} onClick={onClick}>
+  return <button type="button" className={`module-card ${active ? 'active' : ''}`} aria-pressed={active} onClick={onClick}>
     <Icon /><b>{module.title}</b><strong>{module.subtitle}</strong><span>{module.outcomes.join(' • ')}</span><small>{module.level} — {module.duration}</small>
   </button>;
 }
@@ -276,13 +292,13 @@ function ProgramModules({ t, checks, setChecks }) {
   const [selectedId, setSelectedId] = useState(t.modules[0].id);
   const selected = t.modules.find(m => m.id === selectedId) || t.modules[0];
   const Icon = selected.icon;
-  const done = selected.competencies.filter(item => checks[`${selected.id}:${item}`]).length;
+  const done = selected.competencies.reduce((total, _, index) => total + (isCompetencyComplete(checks, selected.id, index) ? 1 : 0), 0);
   const pct = Math.round((done / selected.competencies.length) * 100);
   return <section id="modules" className="section">
     <p className="eyebrow">{t.trainingArchitecture}</p><h2>{t.modulesTitle}</h2>
     <div className="module-grid">{t.modules.map(m => <ModuleCard key={m.id} module={m} active={selected.id === m.id} onClick={() => setSelectedId(m.id)} />)}</div>
     <div className="detail-panel"><div className="panel-head"><Icon /><div><h3>{selected.title}</h3><p>{selected.subtitle} — {selected.level}</p></div><div className="ring" style={{'--pct': `${pct}%`}}><span>{pct}%</span></div></div>
-      <div className="two-col"><div><h4><BookOpen /> {t.curriculum}</h4><ol>{selected.lessons.map(x => <li key={x}>{x}</li>)}</ol></div><div><h4><ClipboardCheck /> {t.competency}</h4>{selected.competencies.map(x => <label className="check" key={x}><input type="checkbox" checked={!!checks[`${selected.id}:${x}`]} onChange={e => setChecks({...checks, [`${selected.id}:${x}`]: e.target.checked})} />{x}</label>)}</div></div>
+      <div className="two-col"><div><h4><BookOpen /> {t.curriculum}</h4><ol>{selected.lessons.map(x => <li key={x}>{x}</li>)}</ol></div><div><h4><ClipboardCheck /> {t.competency}</h4>{selected.competencies.map((x, index) => { const stableKey = competencyStorageKey(selected.id, index); return <label className="check" key={stableKey}><input type="checkbox" checked={isCompetencyComplete(checks, selected.id, index)} onChange={e => { const nextChecks = {...checks, [stableKey]: e.target.checked}; legacyCompetencyKeys(selected.id, index).forEach(key => delete nextChecks[key]); setChecks(nextChecks); }} />{x}</label>; })}</div></div>
     </div>
   </section>;
 }
@@ -291,17 +307,16 @@ function HeartModel({ t }) {
   const [rot, setRot] = useState(0);
   const [selected, setSelected] = useState('LAD');
   return <div className="glass-card heart-card"><div className="card-title"><View /> {t.heartTitle}</div><p>{t.heartText}</p>
-    <div className="heart-stage"><div className="heart-model" style={{transform: `rotateY(${rot}deg) rotateX(${Math.sin(rot/40)*9}deg)`}}><div className="heart-core" />{['LAD', 'LCx', 'RCA'].map((a, i) => <button key={a} onClick={() => setSelected(a)} className={`artery a${i}`}>{a}</button>)}<div className="stent">STENT</div></div></div>
-    <div className="info-pill">{t.selectedAnatomy}: <b>{selected}</b></div><div className="actions"><button onClick={() => setRot(rot - 30)}>{t.rotate}</button><button onClick={() => setRot(0)}><RotateCcw /> {t.reset}</button></div>
+    <div className="heart-stage"><div className="heart-model" style={{transform: `rotateY(${rot}deg) rotateX(${Math.sin(rot/40)*9}deg)`}}><div className="heart-core" />{['LAD', 'LCx', 'RCA'].map((a, i) => <button type="button" aria-pressed={selected === a} key={a} onClick={() => setSelected(a)} className={`artery a${i}`}>{a}</button>)}<div className="stent">STENT</div></div></div>
+    <div className="info-pill">{t.selectedAnatomy}: <b>{selected}</b></div><div className="actions"><button type="button" onClick={() => setRot(rot - 30)}>{t.rotate}</button><button type="button" onClick={() => setRot(0)}><RotateCcw /> {t.reset}</button></div>
   </div>;
 }
 
-function Simulation({ t }) {
+function Simulation({ t, answers, setAnswers }) {
   const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = usePersistedState('cathlab-scenario-answers', {});
   const s = t.scenarios[index];
   const score = t.scenarios.reduce((acc, item, i) => acc + (answers[i] === item.answer ? 1 : 0), 0);
-  return <section id="simulation" className="section simulation-grid"><HeartModel t={t} /><div className="glass-card scenario-card"><div className="card-title"><PlayCircle /> {t.simulationTitle}</div><div className="timeline">{t.scenarios.map((_, i) => <button key={i} className={i === index ? 'active' : ''} onClick={() => setIndex(i)}>{i + 1}</button>)}</div><div className="priority">{s.priority}</div><h3>{s.title}</h3><b className="ar-label">{s.subtitle}</b><p>{s.prompt}</p><div className="decision"><strong>{s.question}</strong>{s.choices.map((choice, i) => { const selected = answers[index] === i; const revealed = answers[index] !== undefined; const correct = i === s.answer; return <button className={`${selected ? 'selected' : ''} ${revealed && correct ? 'correct' : ''} ${revealed && selected && !correct ? 'wrong' : ''}`} key={choice} onClick={() => setAnswers({...answers, [index]: i})}>{revealed && correct ? <CheckCircle2 /> : revealed && selected && !correct ? <XCircle /> : <ChevronLeft />}{choice}</button>; })}</div>{answers[index] !== undefined && <p className="feedback">{s.why}</p>}<div className="score"><Trophy /> {t.simulationScore} {score}/{t.scenarios.length}</div></div></section>;
+  return <section id="simulation" className="section simulation-grid"><HeartModel t={t} /><div className="glass-card scenario-card"><div className="card-title"><PlayCircle /> {t.simulationTitle}</div><div className="timeline" aria-label={t.simulationTitle}>{t.scenarios.map((_, i) => <button type="button" key={i} className={i === index ? 'active' : ''} aria-label={`${t.simulationTitle} ${i + 1}`} aria-pressed={i === index} onClick={() => setIndex(i)}>{i + 1}</button>)}</div><div className="priority">{s.priority}</div><h3>{s.title}</h3><b className="ar-label">{s.subtitle}</b><p>{s.prompt}</p><div className="decision"><strong>{s.question}</strong>{s.choices.map((choice, i) => { const selected = answers[index] === i; const revealed = answers[index] !== undefined; const correct = i === s.answer; return <button type="button" className={`${selected ? 'selected' : ''} ${revealed && correct ? 'correct' : ''} ${revealed && selected && !correct ? 'wrong' : ''}`} key={choice} aria-pressed={selected} onClick={() => setAnswers({...answers, [index]: i})}>{revealed && correct ? <CheckCircle2 /> : revealed && selected && !correct ? <XCircle /> : <ChevronLeft />}{choice}</button>; })}</div>{answers[index] !== undefined && <p className="feedback" aria-live="polite">{s.why}</p>}<div className="score"><Trophy /> {t.simulationScore} {score}/{t.scenarios.length}</div></div></section>;
 }
 
 function printCertificate() {
@@ -310,11 +325,14 @@ function printCertificate() {
   window.setTimeout(() => document.body.classList.remove('print-certificate-only'), 500);
 }
 
-function CertificatePreview({ t, checks }) {
-  const completedCompetencies = Object.values(checks).filter(Boolean).length;
+function CertificatePreview({ t, checks, answers }) {
+  const completedCompetencies = countCompletedCompetencies(checks);
   const totalCompetencies = t.modules.reduce((acc, m) => acc + m.competencies.length, 0);
-  const status = completedCompetencies >= 8 ? t.readyStatus : t.progressStatus;
-  return <section id="certificate" className="section certificate-section"><p className="eyebrow">Certificate Design</p><h2>{t.certificateTitle}</h2><div className="certificate"><div className="cert-border"><div className="cert-top"><div className="cert-seal"><Award /></div><div><h3>{t.certificateSubtitle}</h3><span>Cath Lab Academy</span></div></div><div className="cert-body"><p>{t.certificateStatement}</p><h1>{t.certificateName}</h1><h4>{t.certificateProgram}</h4><div className="cert-metrics"><span>{t.competencyValidation}: <b>{completedCompetencies}/{totalCompetencies}</b></span><span>{t.status}: <b>{status}</b></span></div></div><div className="cert-signatures"><div><b>Program Director</b><small>Signature</small></div><div><b>Clinical Trainer</b><small>Signature</small></div></div><p className="cert-footer">{t.certificateFooter}</p></div><button onClick={printCertificate}><Printer /> {t.printCertificate}</button></div></section>;
+  const simulationScore = t.scenarios.reduce((acc, item, i) => acc + (answers[i] === item.answer ? 1 : 0), 0);
+  const ready = completedCompetencies === totalCompetencies && simulationScore === t.scenarios.length;
+  const status = ready ? t.readyStatus : t.progressStatus;
+  const rtl = t.dir === 'rtl';
+  return <section id="certificate" className="section certificate-section"><p className="eyebrow">{rtl ? 'معاينة الشهادة' : 'Certificate preview'}</p><h2>{t.certificateTitle}</h2><div className="certificate"><div className="cert-border"><div className="cert-top"><div className="cert-seal"><Award /></div><div><h3>{t.certificateSubtitle}</h3><span>Cath Lab Academy</span></div></div><div className="cert-body"><p>{t.certificateStatement}</p><h1>{t.certificateName}</h1><h4>{t.certificateProgram}</h4><div className="cert-metrics"><span>{t.competencyValidation}: <b>{completedCompetencies}/{totalCompetencies}</b></span><span>{t.simulationScore}: <b>{simulationScore}/{t.scenarios.length}</b></span><span>{t.status}: <b>{status}</b></span></div></div><div className="cert-signatures"><div><b>{rtl ? 'مدير البرنامج' : 'Program Director'}</b><small>{rtl ? 'التوقيع' : 'Signature'}</small></div><div><b>{rtl ? 'المدرب السريري' : 'Clinical Trainer'}</b><small>{rtl ? 'التوقيع' : 'Signature'}</small></div></div><p className="cert-footer">{t.certificateFooter}</p></div><button type="button" onClick={printCertificate}><Printer /> {t.printCertificate}</button></div></section>;
 }
 
 function LaunchReadiness({ t }) {
@@ -326,8 +344,19 @@ function App() {
   const [lang, setLang] = usePersistedState('cathlab-language', 'en');
   const t = content[lang] || content.en;
   const [checks, setChecks] = usePersistedState('cathlab-competencies', {});
-  const completed = Object.values(checks).filter(Boolean).length;
+  const [answers, setAnswers] = usePersistedState('cathlab-scenario-answers', {});
+  const completed = countCompletedCompetencies(checks);
   const totalCompetencies = useMemo(() => t.modules.reduce((acc, m) => acc + m.competencies.length, 0), [t.modules]);
+  const simulationScore = t.scenarios.reduce((acc, item, i) => acc + (answers[i] === item.answer ? 1 : 0), 0);
+  const certificateReady = completed === totalCompetencies && simulationScore === t.scenarios.length;
+
+  const resetProgress = () => {
+    const message = lang === 'ar' ? 'هل تريد مسح تقدم الكفاءات وإجابات المحاكاة من هذا الجهاز؟' : 'Clear competency progress and simulation answers from this device?';
+    if (window.confirm(message)) {
+      setChecks({});
+      setAnswers({});
+    }
+  };
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -335,7 +364,7 @@ function App() {
     document.title = lang === 'en' ? 'Cath Lab Academy | Professional Training Platform' : 'أكاديمية القسطرة القلبية | منصة تدريب احترافية';
   }, [lang, t.dir]);
 
-  return <><TopNav t={t} lang={lang} setLang={setLang} /><main id="home" className={lang === 'ar' ? 'rtl' : 'ltr'}><section className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#about">{t.explore}</a><button onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} /><LoginPrototype t={t} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} /><CertificatePreview t={t} checks={checks} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#about">{t.explore}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} /><LoginPrototype t={t} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
