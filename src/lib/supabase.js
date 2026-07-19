@@ -20,6 +20,7 @@ export async function fetchCatalogCourses(lang = 'en') {
   const { data, error } = await supabase
     .from('courses')
     .select(`
+      id,
       slug,
       title_en,
       title_ar,
@@ -52,14 +53,36 @@ export async function fetchCatalogCourses(lang = 'en') {
       ? `${hours || 0} ساعة`
       : `${hours || 0} hours`;
 
-    return [
-      trackName || course.level,
+    return {
+      id: course.id,
+      slug: course.slug,
+      track: trackName || course.level,
       title,
-      summary,
-      course.target_audience || (lang === 'ar' ? 'فريق Cath Lab' : 'Cath Lab staff'),
+      description: summary,
+      audience: course.target_audience || (lang === 'ar' ? 'فريق Cath Lab' : 'Cath Lab staff'),
       duration,
-    ];
+      level: course.level || 'foundation',
+    };
   });
+}
+
+export async function enrollInCourse(profileId, courseId) {
+  if (!supabase) throw new Error('Supabase is not configured.');
+  if (!profileId || !courseId) throw new Error('Missing profile or course.');
+
+  const { data, error } = await supabase
+    .from('enrollments')
+    .upsert({
+      profile_id: profileId,
+      course_id: courseId,
+      status: 'in_progress',
+      progress_percent: 0,
+    }, { onConflict: 'profile_id,course_id' })
+    .select('id, status, progress_percent')
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 export async function getCurrentSession() {

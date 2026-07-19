@@ -40,6 +40,7 @@ import {
 import { programInfo } from './programInfo.js';
 import {
   ensureProfile,
+  enrollInCourse,
   fetchCatalogCourses,
   fetchCurrentProfile,
   fetchDashboardSummary,
@@ -58,9 +59,9 @@ const content = {
     dir: 'ltr',
     nav: ['Home', 'About', 'Catalog', 'Diploma', 'Dashboard', 'Login', 'Certificate'],
     switchTo: 'العربية',
-    heroTitle: 'Cath Lab Academy — Education, Simulation, and Competency Validation',
-    heroText: 'A professional bilingual platform concept for Cath Lab staff development: role-based pathways, simulation, competency evidence, dashboard governance, and certificate readiness.',
-    explore: 'Explore the platform',
+    heroTitle: 'Role-based Cath Lab training with competency validation',
+    heroText: 'Discover Cath Lab courses, enroll as a trainee, track progress, complete simulation practice, and prepare for trainer-led competency sign-off.',
+    explore: 'Start learning',
     printCertificate: 'Print Certificate',
     os: 'Clinical Training OS',
     signed: 'Completed',
@@ -79,7 +80,7 @@ const content = {
     trainingCatalogText: 'Four practical starting pathways for Cath Lab onboarding and continuous development. Dates and trainer-led sessions can be added when the approved agenda is ready.',
     agendaPending: 'Role-based learning paths',
     dashboardTitle: 'Learning Progress Dashboard',
-    dashboardText: 'Your competency checklist, simulation score, and certificate readiness are calculated from activity saved on this device.',
+    dashboardText: 'Your enrolled courses, competency validation, simulation attempts, and certificate readiness are displayed from your secure learner profile when signed in.',
     loginTitle: 'Secure account access',
     loginText: 'Sign in with Supabase Auth to access trainee, trainer, and administrator workflows. New accounts start as trainee profiles until a trainer/admin role is assigned.',
     modulesTitle: 'Official role-based training pathways',
@@ -145,9 +146,9 @@ const content = {
     dir: 'rtl',
     nav: ['الرئيسية', 'من نحن', 'كتالوج التدريب', 'الدبلوم', 'لوحة التحكم', 'الدخول', 'الشهادة'],
     switchTo: 'English',
-    heroTitle: 'Cath Lab Academy — تعليم، محاكاة، واعتماد كفاءات',
-    heroText: 'تصور احترافي لمنصة ثنائية اللغة لتطوير فريق القسطرة القلبية: مسارات تدريب حسب الدور، محاكاة، إثبات كفاءة، لوحة متابعة، وشهادات جاهزة.',
-    explore: 'استعراض المنصة',
+    heroTitle: 'تدريب Cath Lab حسب الدور مع اعتماد الكفاءات',
+    heroText: 'استعرض الدورات، سجّل كمتدرب، تابع تقدمك، تدرب بالمحاكاة، واستعد لاعتماد الكفاءة بإشراف المدرب.',
+    explore: 'ابدأ التعلم',
     printCertificate: 'طباعة الشهادة',
     os: 'نظام التدريب السريري',
     signed: 'مكتملة',
@@ -166,7 +167,7 @@ const content = {
     trainingCatalogText: 'أربعة مسارات عملية لتهيئة فريق القسطرة والتطوير المستمر. يمكن إضافة التواريخ والجلسات بإشراف المدرب عند اعتماد الأجندة.',
     agendaPending: 'مسارات تعلم حسب الدور',
     dashboardTitle: 'لوحة تقدم المتدرب',
-    dashboardText: 'تُحسب الكفاءات ونتيجة المحاكاة وجاهزية الشهادة من النشاط المحفوظ على هذا الجهاز.',
+    dashboardText: 'تظهر الدورات المسجلة واعتماد الكفاءات ومحاولات المحاكاة وجاهزية الشهادة من ملف المتدرب الآمن عند تسجيل الدخول.',
     loginTitle: 'الوصول الآمن للحساب',
     loginText: 'سجّل الدخول عبر Supabase Auth للوصول إلى مسارات المتدرب والمدرب والإدارة. الحسابات الجديدة تبدأ كمتدرب حتى يتم تعيين صلاحية مدرب أو إدارة.',
     modulesTitle: 'مسارات تدريب رسمية حسب الدور الوظيفي',
@@ -260,13 +261,79 @@ function AboutSection({ t }) {
   return <section id="about" className="section about-section"><p className="eyebrow">{t.visionMissionTitle}</p><h2>{t.aboutTitle}</h2><div className="about-layout"><div className="about-main"><Building2 /><p>{t.aboutText}</p><div className="values-row">{t.values.map(value => <span key={value}><CheckCircle2 /> {value}</span>)}</div></div><div className="vm-card"><Target /><h3>{t.vision}</h3><p>{t.visionText}</p></div><div className="vm-card"><Sparkles /><h3>{t.mission}</h3><p>{t.missionText}</p></div></div></section>;
 }
 
-function TrainingCatalog({ t, courses, source }) {
-  const catalogCourses = courses.length ? courses : t.catalogCourses;
-  const sourceLabel = source === 'supabase'
-    ? (t.dir === 'rtl' ? 'متصل بقاعدة بيانات Supabase' : 'Connected to Supabase database')
-    : (t.dir === 'rtl' ? 'بيانات تجريبية لحين اكتمال الربط' : 'Demo catalog fallback');
+function normalizeCatalogCourse(course, index = 0) {
+  if (Array.isArray(course)) {
+    const [track, title, description, audience, duration] = course;
+    return { id: null, slug: `fallback-${index}`, track, title, description, audience, duration, level: track };
+  }
+  return {
+    id: course.id,
+    slug: course.slug || `course-${index}`,
+    track: course.track,
+    title: course.title,
+    description: course.description,
+    audience: course.audience,
+    duration: course.duration,
+    level: course.level || course.track,
+  };
+}
 
-  return <section id="catalog" className="section catalog-section"><p className="eyebrow">{t.agendaPending}</p><h2>{t.trainingCatalogTitle}</h2><p className="section-lead">{t.trainingCatalogText}</p><div className="quality-badges"><span><Database /> {sourceLabel}</span></div><div className="catalog-grid">{catalogCourses.map(([track, title, desc, audience, date]) => <article className="catalog-card" key={title}><div><span className="track-pill">{track}</span><h3>{title}</h3><p>{desc}</p></div><div className="catalog-meta"><span><Users /> {audience}</span><span><CalendarDays /> {date}</span></div></article>)}</div></section>;
+function TrustReadiness({ t }) {
+  const rtl = t.dir === 'rtl';
+  const items = rtl
+    ? [
+        ['Supabase Auth', 'تسجيل دخول حقيقي وحساب متدرب'],
+        ['Database Catalog', 'كتالوج تدريبي ديناميكي من قاعدة البيانات'],
+        ['Protected Dashboard', 'قراءة آمنة لبيانات المتدرب فقط'],
+        ['Certificate Ready', 'بنية جاهزة للتحقق من الشهادات']
+      ]
+    : [
+        ['Supabase Auth', 'Real login and trainee accounts'],
+        ['Database Catalog', 'Dynamic course catalog from Supabase'],
+        ['Protected Dashboard', 'Secure trainee-owned dashboard reads'],
+        ['Certificate Ready', 'Verification-ready certificate structure']
+      ];
+  return <section className="trust-strip" aria-label={rtl ? 'جاهزية المنصة' : 'Platform readiness'}>{items.map(([title, note]) => <div key={title}><ShieldCheck /><strong>{title}</strong><small>{note}</small></div>)}</section>;
+}
+
+function TrainingCatalog({ t, courses, source, session, profile, onEnroll }) {
+  const rtl = t.dir === 'rtl';
+  const [query, setQuery] = useState('');
+  const [trackFilter, setTrackFilter] = useState('all');
+  const [levelFilter, setLevelFilter] = useState('all');
+  const [message, setMessage] = useState('');
+  const catalogCourses = (courses.length ? courses : t.catalogCourses).map(normalizeCatalogCourse);
+  const sourceLabel = source === 'supabase'
+    ? (rtl ? 'متصل بقاعدة بيانات Supabase' : 'Connected to Supabase database')
+    : (rtl ? 'بيانات تجريبية لحين اكتمال الربط' : 'Demo catalog fallback');
+  const tracks = [...new Set(catalogCourses.map(course => course.track).filter(Boolean))];
+  const levels = [...new Set(catalogCourses.map(course => course.level).filter(Boolean))];
+  const visibleCourses = catalogCourses.filter(course => {
+    const text = `${course.track} ${course.title} ${course.description} ${course.audience} ${course.level}`.toLowerCase();
+    return (!query || text.includes(query.toLowerCase()))
+      && (trackFilter === 'all' || course.track === trackFilter)
+      && (levelFilter === 'all' || course.level === levelFilter);
+  });
+
+  async function handleEnroll(course) {
+    setMessage('');
+    if (!session?.user || !profile?.id) {
+      setMessage(rtl ? 'سجّل الدخول أولًا لإنشاء تسجيلك في الدورة.' : 'Sign in first to create your course enrollment.');
+      return;
+    }
+    if (!course.id) {
+      setMessage(rtl ? 'هذه دورة تجريبية ولا يمكن التسجيل فيها حتى تتصل بقاعدة البيانات.' : 'This is a demo course and cannot be enrolled until database data is available.');
+      return;
+    }
+    try {
+      await onEnroll(course);
+      setMessage(rtl ? `تم تسجيلك في: ${course.title}` : `Enrollment saved: ${course.title}`);
+    } catch (error) {
+      setMessage(error.message || String(error));
+    }
+  }
+
+  return <section id="catalog" className="section catalog-section"><p className="eyebrow">{t.agendaPending}</p><h2>{t.trainingCatalogTitle}</h2><p className="section-lead">{t.trainingCatalogText}</p><div className="quality-badges"><span><Database /> {sourceLabel}</span><span><Users /> {rtl ? 'التسجيل يربط الدورة بملف المتدرب' : 'Enroll connects the course to the trainee profile'}</span></div><div className="catalog-toolbar"><label><span>{rtl ? 'بحث' : 'Search'}</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={rtl ? 'ابحث عن دورة أو مسار...' : 'Search courses or tracks...'} /></label><label><span>{rtl ? 'المسار' : 'Track'}</span><select value={trackFilter} onChange={event => setTrackFilter(event.target.value)}><option value="all">{rtl ? 'كل المسارات' : 'All tracks'}</option>{tracks.map(track => <option key={track} value={track}>{track}</option>)}</select></label><label><span>{rtl ? 'المستوى' : 'Level'}</span><select value={levelFilter} onChange={event => setLevelFilter(event.target.value)}><option value="all">{rtl ? 'كل المستويات' : 'All levels'}</option>{levels.map(level => <option key={level} value={level}>{level}</option>)}</select></label></div>{message && <p className="inline-alert" role="status">{message}</p>}<div className="catalog-grid">{visibleCourses.map(course => <article className="catalog-card" key={course.slug || course.title}><div><span className="track-pill">{course.track}</span><h3>{course.title}</h3><p>{course.description}</p></div><div className="catalog-meta"><span><Users /> {course.audience}</span><span><CalendarDays /> {course.duration}</span><span><Target /> {course.level}</span></div><button className="enroll-button" type="button" onClick={() => handleEnroll(course)}><CheckCircle2 /> {rtl ? 'سجّل في الدورة' : 'Enroll'}</button></article>)}</div>{visibleCourses.length === 0 && <p className="inline-alert">{rtl ? 'لا توجد دورات مطابقة للبحث الحالي.' : 'No courses match the current filters.'}</p>}</section>;
 }
 
 
@@ -488,6 +555,12 @@ function App() {
     }
   }
 
+  async function handleCourseEnroll(course) {
+    if (!profile?.id) throw new Error(lang === 'ar' ? 'سجّل الدخول أولًا.' : 'Sign in first.');
+    await enrollInCourse(profile.id, course.id);
+    setDashboardSummary(await fetchDashboardSummary(profile.id));
+  }
+
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = t.dir;
@@ -520,7 +593,7 @@ function App() {
     return () => { active = false; };
   }, [lang]);
 
-  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#about">{t.explore}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);

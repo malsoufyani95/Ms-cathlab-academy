@@ -218,9 +218,22 @@ drop policy if exists "authenticated create own trainee profile" on profiles;
 create policy "authenticated create own trainee profile" on profiles for insert to authenticated with check (auth.uid() = auth_user_id and role = 'trainee');
 
 grant select on enrollments, competency_assessments, simulation_attempts, certificates to authenticated;
+grant insert, update on enrollments to authenticated;
 
 drop policy if exists "authenticated read own enrollments" on enrollments;
 create policy "authenticated read own enrollments" on enrollments for select to authenticated using (
+  exists (select 1 from profiles p where p.id = enrollments.profile_id and p.auth_user_id = auth.uid())
+);
+
+drop policy if exists "authenticated enroll own courses" on enrollments;
+create policy "authenticated enroll own courses" on enrollments for insert to authenticated with check (
+  exists (select 1 from profiles p where p.id = enrollments.profile_id and p.auth_user_id = auth.uid())
+);
+
+drop policy if exists "authenticated update own enrollments" on enrollments;
+create policy "authenticated update own enrollments" on enrollments for update to authenticated using (
+  exists (select 1 from profiles p where p.id = enrollments.profile_id and p.auth_user_id = auth.uid())
+) with check (
   exists (select 1 from profiles p where p.id = enrollments.profile_id and p.auth_user_id = auth.uid())
 );
 
