@@ -195,6 +195,15 @@ p { color: var(--muted); line-height: 1.75; }
 .mini-list { display: grid; gap: 10px; }
 .mini-list span { display: flex; gap: 9px; align-items: center; color: #334155; font-weight: 750; }
 .mini-list svg { color: var(--green); }
+.trainer-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+.trainer-table { align-items: start; }
+.trainer-table h3 { margin-top: 0; }
+.trainer-list { display: grid; gap: 10px; }
+.trainer-list > div { border: 1px solid var(--line); background: rgba(255,255,255,.08); border-radius: 16px; padding: 12px 14px; display: grid; gap: 5px; }
+.trainer-list span, .certificate-count { display: flex; align-items: center; gap: 8px; color: var(--text); font-weight: 850; }
+.trainer-list small { color: var(--muted); }
+.trainer-list svg, .certificate-count svg { color: var(--cyan); width: 16px; }
+.certificate-count { margin-top: 6px; border: 1px solid rgba(69,215,232,.28); background: rgba(69,215,232,.09); border-radius: 14px; padding: 11px 12px; }
 .login-section { display: grid; grid-template-columns: 1fr 440px; gap: 18px; align-items: stretch; }
 .login-copy, .login-card { border-radius: 32px; padding: 30px; }
 .login-card { display: grid; gap: 16px; }
@@ -301,7 +310,7 @@ footer { margin: 34px 0 12px; color: var(--muted); display: flex; gap: 10px; ali
 @media (max-width: 980px) {
   .topnav { padding-block: 12px; }
   .nav-links { justify-content: flex-start; }
-  .hero, .executive-overview, .about-layout, .simulation-grid, .login-section, .dashboard-panel, .diploma-layout, .diploma-years, .program-hero, .program-two-col { grid-template-columns: 1fr; }
+  .hero, .executive-overview, .about-layout, .simulation-grid, .login-section, .dashboard-panel, .diploma-layout, .diploma-years, .program-hero, .program-two-col, .trainer-layout { grid-template-columns: 1fr; }
   .stats-row, .module-grid, .dashboard-grid, .diploma-highlights, .diploma-modules > div:last-child, .diploma-simulation > div:last-child, .trust-strip { grid-template-columns: repeat(2, 1fr); }
   .overview-grid, .launch-grid, .catalog-grid, .catalog-toolbar { grid-template-columns: 1fr; }
   .roadmap { grid-template-columns: repeat(2, 1fr); }

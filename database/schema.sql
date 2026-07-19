@@ -4,10 +4,21 @@
 
 create extension if not exists pgcrypto;
 
-create type app_role as enum ('trainee', 'trainer', 'admin');
-create type enrollment_status as enum ('not_started', 'in_progress', 'completed', 'validated', 'archived');
-create type competency_status as enum ('pending', 'observed', 'validated', 'needs_remediation');
-create type course_level as enum ('foundation', 'intermediate', 'advanced', 'trainer');
+do $$ begin
+  create type app_role as enum ('trainee', 'trainer', 'admin');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type enrollment_status as enum ('not_started', 'in_progress', 'completed', 'validated', 'archived');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type competency_status as enum ('pending', 'observed', 'validated', 'needs_remediation');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type course_level as enum ('foundation', 'intermediate', 'advanced', 'trainer');
+exception when duplicate_object then null; end $$;
 
 create table if not exists profiles (
   id uuid primary key default gen_random_uuid(),
@@ -211,8 +222,23 @@ grant usage on schema public to anon, authenticated;
 grant select on training_tracks, courses, course_sessions, competencies, simulation_scenarios to anon, authenticated;
 grant select, insert on profiles to authenticated;
 
+create or replace function public.current_user_role()
+returns app_role
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select role from profiles where auth_user_id = auth.uid() limit 1;
+$$;
+
+grant execute on function public.current_user_role() to authenticated;
+
 drop policy if exists "authenticated read own profile" on profiles;
 create policy "authenticated read own profile" on profiles for select to authenticated using (auth.uid() = auth_user_id);
+
+drop policy if exists "trainer admin read profiles" on profiles;
+create policy "trainer admin read profiles" on profiles for select to authenticated using (public.current_user_role() in ('trainer', 'admin'));
 
 drop policy if exists "authenticated create own trainee profile" on profiles;
 create policy "authenticated create own trainee profile" on profiles for insert to authenticated with check (auth.uid() = auth_user_id and role = 'trainee');
@@ -222,7 +248,8 @@ grant insert, update on enrollments to authenticated;
 
 drop policy if exists "authenticated read own enrollments" on enrollments;
 create policy "authenticated read own enrollments" on enrollments for select to authenticated using (
-  exists (select 1 from profiles p where p.id = enrollments.profile_id and p.auth_user_id = auth.uid())
+  public.current_user_role() in ('trainer', 'admin')
+  or exists (select 1 from profiles p where p.id = enrollments.profile_id and p.auth_user_id = auth.uid())
 );
 
 drop policy if exists "authenticated enroll own courses" on enrollments;
@@ -239,17 +266,20 @@ create policy "authenticated update own enrollments" on enrollments for update t
 
 drop policy if exists "authenticated read own competency assessments" on competency_assessments;
 create policy "authenticated read own competency assessments" on competency_assessments for select to authenticated using (
-  exists (select 1 from profiles p where p.id = competency_assessments.trainee_id and p.auth_user_id = auth.uid())
+  public.current_user_role() in ('trainer', 'admin')
+  or exists (select 1 from profiles p where p.id = competency_assessments.trainee_id and p.auth_user_id = auth.uid())
 );
 
 drop policy if exists "authenticated read own simulation attempts" on simulation_attempts;
 create policy "authenticated read own simulation attempts" on simulation_attempts for select to authenticated using (
-  exists (select 1 from profiles p where p.id = simulation_attempts.trainee_id and p.auth_user_id = auth.uid())
+  public.current_user_role() in ('trainer', 'admin')
+  or exists (select 1 from profiles p where p.id = simulation_attempts.trainee_id and p.auth_user_id = auth.uid())
 );
 
 drop policy if exists "authenticated read own certificates" on certificates;
 create policy "authenticated read own certificates" on certificates for select to authenticated using (
-  exists (select 1 from profiles p where p.id = certificates.trainee_id and p.auth_user_id = auth.uid())
+  public.current_user_role() in ('trainer', 'admin')
+  or exists (select 1 from profiles p where p.id = certificates.trainee_id and p.auth_user_id = auth.uid())
 );
 
 drop policy if exists "public read active tracks" on training_tracks;

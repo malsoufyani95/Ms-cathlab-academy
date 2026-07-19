@@ -44,6 +44,7 @@ import {
   fetchCatalogCourses,
   fetchCurrentProfile,
   fetchDashboardSummary,
+  fetchTrainerDashboardSummary,
   getCurrentSession,
   isSupabaseConfigured,
   signInWithEmail,
@@ -372,6 +373,18 @@ function Dashboard({ t, completed, totalCompetencies, simulationScore, scenarioC
   return <section id="dashboard" className="section dashboard-section"><p className="eyebrow">{rtl ? 'متابعة مباشرة' : 'Live progress'}</p><h2>{t.dashboardTitle}</h2><p className="section-lead">{t.dashboardText}</p><div className="dashboard-grid">{dashboardCards.map(([value, label, note], i) => { const icons = [BarChart3, ClipboardCheck, Activity, Award]; const Icon = icons[i]; return <div className="dash-card" key={label}><Icon /><strong>{value}</strong><span>{label}</span><small>{note}</small></div>; })}</div><div className="dashboard-panel"><div><h3>{matrixTitle}</h3><div className="progress-line" role="progressbar" aria-label={matrixTitle} aria-valuemin="0" aria-valuemax="100" aria-valuenow={pct}><span style={{ width: `${pct}%` }} /></div><small>{progressText}</small>{usingDatabase && dashboardSummary.enrollments.length > 0 && <div className="mini-list dashboard-enrollments">{dashboardSummary.enrollments.slice(0, 3).map(row => <span key={row.id}><BookOpen /> {row.courses?.[rtl ? 'title_ar' : 'title_en'] || row.courses?.title_en || row.status}: {row.progress_percent}%</span>)}</div>}</div><div className="mini-list"><span><Database /> {sourceText}</span><span><CheckCircle2 /> {rtl ? 'المحاكاة والتقدم المحلي لا يزالان متاحين' : 'Local simulation and progress remain available'}</span><button className="text-button danger-button" type="button" onClick={onReset}><RotateCcw /> {resetLabel}</button></div></div></section>;
 }
 
+
+function TrainerAdminDashboard({ t, profile, summary }) {
+  const rtl = t.dir === 'rtl';
+  if (!profile || !['trainer', 'admin'].includes(profile.role) || !summary) return null;
+  const cards = rtl
+    ? [[summary.traineeCount, 'المتدربون', 'حسابات Trainee نشطة'], [summary.enrollmentCount, 'التسجيلات', 'جميع الدورات المسجلة'], [`${summary.averageProgress}%`, 'متوسط التقدم', 'متوسط تقدم المتدربين'], [summary.pendingAssessmentCount, 'اعتمادات معلقة', 'تحتاج مراجعة المدرب']]
+    : [[summary.traineeCount, 'Trainees', 'Active trainee accounts'], [summary.enrollmentCount, 'Enrollments', 'All registered courses'], [`${summary.averageProgress}%`, 'Average progress', 'Learner progress average'], [summary.pendingAssessmentCount, 'Pending sign-offs', 'Need trainer review']];
+  const title = rtl ? 'لوحة المدرب والإدارة' : 'Trainer / Admin Dashboard';
+  const lead = rtl ? 'نظرة إشرافية على المتدربين، التسجيلات، التقدم، واعتمادات الكفاءة من Supabase.' : 'Supervisor view for trainees, enrollments, progress, and competency sign-offs from Supabase.';
+  return <section id="trainer-admin" className="section trainer-admin-section"><p className="eyebrow">{profile.role === 'admin' ? 'Admin Console' : 'Trainer Console'}</p><h2>{title}</h2><p className="section-lead">{lead}</p><div className="dashboard-grid">{cards.map(([value, label, note], i) => { const icons = [Users, BookOpen, BarChart3, ClipboardCheck]; const Icon = icons[i]; return <div className="dash-card" key={label}><Icon /><strong>{value}</strong><span>{label}</span><small>{note}</small></div>; })}</div><div className="trainer-layout"><div className="dashboard-panel trainer-table"><h3>{rtl ? 'آخر المتدربين والتسجيلات' : 'Recent trainees and enrollments'}</h3><div className="trainer-list">{summary.enrollments.slice(0, 6).map(row => <div key={row.id}><span><UserRound /> {row.profiles?.full_name || (rtl ? 'متدرب' : 'Trainee')}</span><b>{row.courses?.[rtl ? 'title_ar' : 'title_en'] || row.courses?.title_en || row.status}</b><small>{row.status} • {row.progress_percent}%</small></div>)}{summary.enrollments.length === 0 && <p className="inline-alert">{rtl ? 'لا توجد تسجيلات بعد.' : 'No enrollments yet.'}</p>}</div></div><div className="dashboard-panel trainer-table"><h3>{rtl ? 'الكفاءات والشهادات' : 'Competencies and certificates'}</h3><div className="trainer-list">{summary.pendingAssessments.slice(0, 4).map(row => <div key={row.id}><span><ClipboardCheck /> {row.profiles?.full_name || (rtl ? 'متدرب' : 'Trainee')}</span><b>{row.competencies?.[rtl ? 'title_ar' : 'title_en'] || row.competencies?.title_en || row.competencies?.code}</b><small>{row.status}</small></div>)}{summary.pendingAssessments.length === 0 && <div><span><CheckCircle2 /> {rtl ? 'لا توجد كفاءات معلقة حاليًا' : 'No pending competency sign-offs'}</span><small>{rtl ? 'ستظهر هنا عند إضافة تقييمات الكفاءات.' : 'They will appear here when competency assessments are created.'}</small></div>}<div className="certificate-count"><Award /> {rtl ? `${summary.certificateCount} شهادات صادرة` : `${summary.certificateCount} certificates issued`}</div></div></div></div></section>;
+}
+
 function LoginPrototype({ t, session, profile, onAuthChange }) {
   const rtl = t.dir === 'rtl';
   const [mode, setMode] = useState('signin');
@@ -527,6 +540,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [dashboardSummary, setDashboardSummary] = useState(null);
+  const [trainerSummary, setTrainerSummary] = useState(null);
   const completed = countCompletedCompetencies(checks);
   const totalCompetencies = useMemo(() => t.modules.reduce((acc, m) => acc + m.competencies.length, 0), [t.modules]);
   const simulationScore = t.scenarios.reduce((acc, item, i) => acc + (answers[i] === item.answer ? 1 : 0), 0);
@@ -549,9 +563,11 @@ function App() {
       const nextProfile = await fetchCurrentProfile(currentSession.user.id);
       setProfile(nextProfile);
       setDashboardSummary(nextProfile?.id ? await fetchDashboardSummary(nextProfile.id) : null);
+      setTrainerSummary(nextProfile ? await fetchTrainerDashboardSummary(nextProfile) : null);
     } else {
       setProfile(null);
       setDashboardSummary(null);
+      setTrainerSummary(null);
     }
   }
 
@@ -559,6 +575,7 @@ function App() {
     if (!profile?.id) throw new Error(lang === 'ar' ? 'سجّل الدخول أولًا.' : 'Sign in first.');
     await enrollInCourse(profile.id, course.id);
     setDashboardSummary(await fetchDashboardSummary(profile.id));
+    setTrainerSummary(await fetchTrainerDashboardSummary(profile));
   }
 
   useEffect(() => {
@@ -593,7 +610,7 @@ function App() {
     return () => { active = false; };
   }, [lang]);
 
-  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><TrainerAdminDashboard t={t} profile={profile} summary={trainerSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);

@@ -216,3 +216,56 @@ export async function fetchDashboardSummary(profileId) {
     attemptCount,
   };
 }
+
+
+export async function fetchTrainerDashboardSummary(profile) {
+  if (!supabase || !profile || !['trainer', 'admin'].includes(profile.role)) return null;
+
+  const [profilesResult, enrollmentsResult, pendingAssessmentsResult, certificatesResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, full_name, email, role, job_title, department, active, created_at')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('enrollments')
+      .select('id, status, progress_percent, enrolled_at, profiles(id, full_name, role), courses(title_en, title_ar, level)')
+      .order('enrolled_at', { ascending: false }),
+    supabase
+      .from('competency_assessments')
+      .select('id, status, evidence_note, assessed_at, profiles!competency_assessments_trainee_id_fkey(id, full_name), competencies(title_en, title_ar, code)')
+      .in('status', ['pending', 'observed', 'needs_remediation'])
+      .order('created_at', { ascending: false })
+      .limit(12),
+    supabase
+      .from('certificates')
+      .select('id, certificate_number, status, issued_at, profiles!certificates_trainee_id_fkey(id, full_name), courses(title_en, title_ar)')
+      .order('issued_at', { ascending: false })
+      .limit(12),
+  ]);
+
+  for (const [label, result] of [['profiles', profilesResult], ['enrollments', enrollmentsResult], ['assessments', pendingAssessmentsResult], ['certificates', certificatesResult]]) {
+    if (result.error) console.warn(`Unable to load trainer ${label}:`, result.error.message);
+  }
+
+  const profiles = profilesResult.data || [];
+  const enrollments = enrollmentsResult.data || [];
+  const pendingAssessments = pendingAssessmentsResult.data || [];
+  const certificates = certificatesResult.data || [];
+  const trainees = profiles.filter(row => row.role === 'trainee');
+  const averageProgress = enrollments.length
+    ? Math.round(enrollments.reduce((total, row) => total + Number(row.progress_percent || 0), 0) / enrollments.length)
+    : 0;
+
+  return {
+    profiles,
+    trainees,
+    enrollments,
+    pendingAssessments,
+    certificates,
+    traineeCount: trainees.length,
+    enrollmentCount: enrollments.length,
+    pendingAssessmentCount: pendingAssessments.length,
+    certificateCount: certificates.length,
+    averageProgress,
+  };
+}
