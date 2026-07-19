@@ -93,10 +93,10 @@ main { max-width: 1180px; margin: auto; padding: 28px; }
   border-radius: 42px;
   padding: 18px;
   background:
-    linear-gradient(90deg, rgba(3, 17, 28, .94) 0%, rgba(5, 32, 53, .84) 43%, rgba(5, 20, 34, .42) 100%),
+    linear-gradient(90deg, rgba(3, 17, 28, .82) 0%, rgba(5, 32, 53, .54) 39%, rgba(5, 20, 34, .12) 100%),
     url('/assets/cathlab-hero.jpg') center right / cover no-repeat;
-  border: 1px solid rgba(69, 215, 232, .22);
-  box-shadow: 0 38px 120px rgba(0, 0, 0, .62), inset 0 0 0 1px rgba(255,255,255,.045);
+  border: 1px solid rgba(69, 215, 232, .25);
+  box-shadow: 0 38px 120px rgba(0, 0, 0, .54), inset 0 0 0 1px rgba(255,255,255,.06);
 }
 .hero:after {
   content: "";
@@ -104,8 +104,8 @@ main { max-width: 1180px; margin: auto; padding: 28px; }
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 24% 25%, rgba(69, 215, 232, .18), transparent 34%),
-    linear-gradient(180deg, transparent 62%, rgba(3, 17, 28, .74));
+    radial-gradient(circle at 20% 24%, rgba(69, 215, 232, .11), transparent 32%),
+    linear-gradient(180deg, transparent 70%, rgba(3, 17, 28, .46));
 }
 .hero > * { position: relative; z-index: 1; }
 .hero-copy, .hero-panel, .stat, .module-card, .detail-panel, .glass-card, .certificate, .launch-grid > div, .road, .overview-card, .overview-copy, .about-main, .vm-card, .catalog-card, .dash-card, .dashboard-panel, .login-card, .login-copy {
@@ -114,7 +114,7 @@ main { max-width: 1180px; margin: auto; padding: 28px; }
   box-shadow: 0 24px 70px rgba(88, 28, 135, .12);
   backdrop-filter: blur(18px);
 }
-.hero-copy { border-radius: 34px; padding: 56px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(4,18,31,.86), rgba(9,38,59,.58)); }
+.hero-copy { border-radius: 34px; padding: 56px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(4,18,31,.72), rgba(9,38,59,.36)); }
 .hero-copy:before { content: ""; position: absolute; inset: -40% -25% auto auto; width: 560px; height: 560px; border-radius: 50%; background: radial-gradient(circle, rgba(69,215,232,.26), transparent 62%); }
 .hero-copy > * { position: relative; }
 .eyebrow { margin: 0 0 12px; color: var(--purple); text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 950; }
