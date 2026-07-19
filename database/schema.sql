@@ -217,6 +217,28 @@ create policy "authenticated read own profile" on profiles for select to authent
 drop policy if exists "authenticated create own trainee profile" on profiles;
 create policy "authenticated create own trainee profile" on profiles for insert to authenticated with check (auth.uid() = auth_user_id and role = 'trainee');
 
+grant select on enrollments, competency_assessments, simulation_attempts, certificates to authenticated;
+
+drop policy if exists "authenticated read own enrollments" on enrollments;
+create policy "authenticated read own enrollments" on enrollments for select to authenticated using (
+  exists (select 1 from profiles p where p.id = enrollments.profile_id and p.auth_user_id = auth.uid())
+);
+
+drop policy if exists "authenticated read own competency assessments" on competency_assessments;
+create policy "authenticated read own competency assessments" on competency_assessments for select to authenticated using (
+  exists (select 1 from profiles p where p.id = competency_assessments.trainee_id and p.auth_user_id = auth.uid())
+);
+
+drop policy if exists "authenticated read own simulation attempts" on simulation_attempts;
+create policy "authenticated read own simulation attempts" on simulation_attempts for select to authenticated using (
+  exists (select 1 from profiles p where p.id = simulation_attempts.trainee_id and p.auth_user_id = auth.uid())
+);
+
+drop policy if exists "authenticated read own certificates" on certificates;
+create policy "authenticated read own certificates" on certificates for select to authenticated using (
+  exists (select 1 from profiles p where p.id = certificates.trainee_id and p.auth_user_id = auth.uid())
+);
+
 drop policy if exists "public read active tracks" on training_tracks;
 create policy "public read active tracks" on training_tracks for select using (active = true);
 

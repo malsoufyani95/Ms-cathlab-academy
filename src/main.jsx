@@ -42,6 +42,7 @@ import {
   ensureProfile,
   fetchCatalogCourses,
   fetchCurrentProfile,
+  fetchDashboardSummary,
   getCurrentSession,
   isSupabaseConfigured,
   signInWithEmail,
@@ -280,17 +281,28 @@ function ProgramInfoTeaser({ lang }) {
   </section>;
 }
 
-function Dashboard({ t, completed, totalCompetencies, simulationScore, scenarioCount, certificateReady, onReset }) {
-  const pct = totalCompetencies ? Math.round((completed / totalCompetencies) * 100) : 0;
-  const simulationPct = scenarioCount ? Math.round((simulationScore / scenarioCount) * 100) : 0;
+function Dashboard({ t, completed, totalCompetencies, simulationScore, scenarioCount, certificateReady, onReset, session, profile, dashboardSummary }) {
   const rtl = t.dir === 'rtl';
+  const usingDatabase = Boolean(session?.user && profile && dashboardSummary);
+  const localPct = totalCompetencies ? Math.round((completed / totalCompetencies) * 100) : 0;
+  const simulationPct = scenarioCount ? Math.round((simulationScore / scenarioCount) * 100) : 0;
+  const dbPct = dashboardSummary?.averageProgress ?? 0;
+  const pct = usingDatabase ? dbPct : localPct;
+  const validated = dashboardSummary?.validatedCount ?? 0;
+  const assessments = dashboardSummary?.assessmentCount ?? totalCompetencies;
+  const certificateCount = dashboardSummary?.certificateCount ?? 0;
+  const enrollmentCount = dashboardSummary?.enrollmentCount ?? 0;
+  const attemptCount = dashboardSummary?.attemptCount ?? simulationScore;
   const dashboardCards = rtl
-    ? [[`${pct}%`, 'اكتمال الكفاءات', `${completed} من ${totalCompetencies}`], [`${totalCompetencies - completed}`, 'كفاءات متبقية', 'محفوظة على هذا الجهاز'], [`${simulationPct}%`, 'نتيجة المحاكاة', `${simulationScore} من ${scenarioCount}`], [certificateReady ? 'جاهزة' : 'غير جاهزة', 'حالة الشهادة', 'تتطلب إكمال الكفاءات والمحاكاة']]
-    : [[`${pct}%`, 'Competency completion', `${completed} of ${totalCompetencies}`], [`${totalCompetencies - completed}`, 'Competencies remaining', 'Saved on this device'], [`${simulationPct}%`, 'Simulation score', `${simulationScore} of ${scenarioCount}`], [certificateReady ? 'Ready' : 'Not ready', 'Certificate status', 'Requires all competencies and scenarios']];
-  const matrixTitle = rtl ? 'مصفوفة الكفاءات' : 'Competency matrix';
-  const progressText = rtl ? `${completed}/${totalCompetencies} من عناصر قائمة الكفاءة مكتملة` : `${completed}/${totalCompetencies} competency checklist items completed`;
-  const resetLabel = rtl ? 'إعادة ضبط التقدم' : 'Reset progress';
-  return <section id="dashboard" className="section dashboard-section"><p className="eyebrow">{rtl ? 'متابعة مباشرة' : 'Live progress'}</p><h2>{t.dashboardTitle}</h2><p className="section-lead">{t.dashboardText}</p><div className="dashboard-grid">{dashboardCards.map(([value, label, note], i) => { const icons = [BarChart3, ClipboardCheck, Activity, Award]; const Icon = icons[i]; return <div className="dash-card" key={label}><Icon /><strong>{value}</strong><span>{label}</span><small>{note}</small></div>; })}</div><div className="dashboard-panel"><div><h3>{matrixTitle}</h3><div className="progress-line" role="progressbar" aria-label={matrixTitle} aria-valuemin="0" aria-valuemax="100" aria-valuenow={pct}><span style={{ width: `${pct}%` }} /></div><small>{progressText}</small></div><div className="mini-list"><span><CheckCircle2 /> {rtl ? 'التقدم محفوظ محليًا' : 'Progress saved locally'}</span><span><CheckCircle2 /> {rtl ? 'المحاكاة التفاعلية مفعّلة' : 'Interactive simulation enabled'}</span><button className="text-button danger-button" type="button" onClick={onReset}><RotateCcw /> {resetLabel}</button></div></div></section>;
+    ? [[`${pct}%`, 'تقدم التدريب', usingDatabase ? `${enrollmentCount} دورات مسجلة` : `${completed} من ${totalCompetencies}`], [`${validated}/${assessments}`, 'الكفاءات المعتمدة', usingDatabase ? 'من قاعدة البيانات' : 'محفوظة على هذا الجهاز'], [`${attemptCount}`, 'محاولات المحاكاة', usingDatabase ? 'مسجلة في Supabase' : `${simulationScore} من ${scenarioCount}`], [certificateCount ? 'مصدرة' : certificateReady ? 'جاهزة' : 'غير جاهزة', 'حالة الشهادة', certificateCount ? `${certificateCount} شهادة` : 'تتطلب إكمال الكفاءات والمحاكاة']]
+    : [[`${pct}%`, 'Training progress', usingDatabase ? `${enrollmentCount} enrolled courses` : `${completed} of ${totalCompetencies}`], [`${validated}/${assessments}`, 'Validated competencies', usingDatabase ? 'From database' : 'Saved on this device'], [`${attemptCount}`, 'Simulation attempts', usingDatabase ? 'Stored in Supabase' : `${simulationScore} of ${scenarioCount}`], [certificateCount ? 'Issued' : certificateReady ? 'Ready' : 'Not ready', 'Certificate status', certificateCount ? `${certificateCount} certificate(s)` : 'Requires competencies and scenarios']];
+  const matrixTitle = usingDatabase ? (rtl ? 'لوحة بيانات المتدرب' : 'Trainee data dashboard') : (rtl ? 'مصفوفة الكفاءات المحلية' : 'Local competency matrix');
+  const progressText = usingDatabase
+    ? (rtl ? `مرحبًا ${profile.full_name} — الدور: ${profile.role}` : `Welcome ${profile.full_name} — role: ${profile.role}`)
+    : (rtl ? `${completed}/${totalCompetencies} من عناصر قائمة الكفاءة مكتملة` : `${completed}/${totalCompetencies} competency checklist items completed`);
+  const resetLabel = rtl ? 'إعادة ضبط التقدم المحلي' : 'Reset local progress';
+  const sourceText = usingDatabase ? (rtl ? 'البيانات تقرأ من Supabase' : 'Data loaded from Supabase') : (rtl ? 'سجّل الدخول لعرض بياناتك من Supabase' : 'Sign in to view your Supabase data');
+  return <section id="dashboard" className="section dashboard-section"><p className="eyebrow">{rtl ? 'متابعة مباشرة' : 'Live progress'}</p><h2>{t.dashboardTitle}</h2><p className="section-lead">{t.dashboardText}</p><div className="dashboard-grid">{dashboardCards.map(([value, label, note], i) => { const icons = [BarChart3, ClipboardCheck, Activity, Award]; const Icon = icons[i]; return <div className="dash-card" key={label}><Icon /><strong>{value}</strong><span>{label}</span><small>{note}</small></div>; })}</div><div className="dashboard-panel"><div><h3>{matrixTitle}</h3><div className="progress-line" role="progressbar" aria-label={matrixTitle} aria-valuemin="0" aria-valuemax="100" aria-valuenow={pct}><span style={{ width: `${pct}%` }} /></div><small>{progressText}</small>{usingDatabase && dashboardSummary.enrollments.length > 0 && <div className="mini-list dashboard-enrollments">{dashboardSummary.enrollments.slice(0, 3).map(row => <span key={row.id}><BookOpen /> {row.courses?.[rtl ? 'title_ar' : 'title_en'] || row.courses?.title_en || row.status}: {row.progress_percent}%</span>)}</div>}</div><div className="mini-list"><span><Database /> {sourceText}</span><span><CheckCircle2 /> {rtl ? 'المحاكاة والتقدم المحلي لا يزالان متاحين' : 'Local simulation and progress remain available'}</span><button className="text-button danger-button" type="button" onClick={onReset}><RotateCcw /> {resetLabel}</button></div></div></section>;
 }
 
 function LoginPrototype({ t, session, profile, onAuthChange }) {
@@ -447,6 +459,7 @@ function App() {
   const [catalogSource, setCatalogSource] = useState(isSupabaseConfigured ? 'loading' : 'fallback');
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [dashboardSummary, setDashboardSummary] = useState(null);
   const completed = countCompletedCompetencies(checks);
   const totalCompetencies = useMemo(() => t.modules.reduce((acc, m) => acc + m.competencies.length, 0), [t.modules]);
   const simulationScore = t.scenarios.reduce((acc, item, i) => acc + (answers[i] === item.answer ? 1 : 0), 0);
@@ -468,8 +481,10 @@ function App() {
       await ensureProfile(currentSession.user);
       const nextProfile = await fetchCurrentProfile(currentSession.user.id);
       setProfile(nextProfile);
+      setDashboardSummary(nextProfile?.id ? await fetchDashboardSummary(nextProfile.id) : null);
     } else {
       setProfile(null);
+      setDashboardSummary(null);
     }
   }
 
@@ -505,7 +520,7 @@ function App() {
     return () => { active = false; };
   }, [lang]);
 
-  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#about">{t.explore}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#about">{t.explore}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);

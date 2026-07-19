@@ -146,3 +146,50 @@ export async function ensureProfile(user, fullName = '') {
   }
   return data;
 }
+
+async function countRows(table, filters = []) {
+  if (!supabase) return 0;
+  let query = supabase.from(table).select('*', { count: 'exact', head: true });
+  filters.forEach(([column, value]) => { query = query.eq(column, value); });
+  const { count, error } = await query;
+  if (error) {
+    console.warn(`Unable to count ${table}:`, error.message);
+    return 0;
+  }
+  return count || 0;
+}
+
+export async function fetchDashboardSummary(profileId) {
+  if (!supabase || !profileId) return null;
+
+  const [enrollmentsResult, assessmentCount, validatedCount, certificateCount, attemptCount] = await Promise.all([
+    supabase
+      .from('enrollments')
+      .select('id, status, progress_percent, courses(title_en, title_ar)')
+      .eq('profile_id', profileId)
+      .order('enrolled_at', { ascending: false }),
+    countRows('competency_assessments', [['trainee_id', profileId]]),
+    countRows('competency_assessments', [['trainee_id', profileId], ['status', 'validated']]),
+    countRows('certificates', [['trainee_id', profileId]]),
+    countRows('simulation_attempts', [['trainee_id', profileId]]),
+  ]);
+
+  if (enrollmentsResult.error) {
+    console.warn('Unable to load enrollments:', enrollmentsResult.error.message);
+  }
+
+  const enrollments = enrollmentsResult.data || [];
+  const averageProgress = enrollments.length
+    ? Math.round(enrollments.reduce((total, row) => total + Number(row.progress_percent || 0), 0) / enrollments.length)
+    : 0;
+
+  return {
+    enrollments,
+    enrollmentCount: enrollments.length,
+    averageProgress,
+    assessmentCount,
+    validatedCount,
+    certificateCount,
+    attemptCount,
+  };
+}
