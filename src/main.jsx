@@ -38,7 +38,17 @@ import {
   XCircle
 } from 'lucide-react';
 import { programInfo } from './programInfo.js';
-import { fetchCatalogCourses, isSupabaseConfigured } from './lib/supabase.js';
+import {
+  ensureProfile,
+  fetchCatalogCourses,
+  fetchCurrentProfile,
+  getCurrentSession,
+  isSupabaseConfigured,
+  signInWithEmail,
+  signOut,
+  signUpWithEmail,
+  subscribeToAuthChanges
+} from './lib/supabase.js';
 import { usePersistedState } from './usePersistedState.js';
 import './styles.css';
 
@@ -69,8 +79,8 @@ const content = {
     agendaPending: 'Role-based learning paths',
     dashboardTitle: 'Learning Progress Dashboard',
     dashboardText: 'Your competency checklist, simulation score, and certificate readiness are calculated from activity saved on this device.',
-    loginTitle: 'Secure account access — planned',
-    loginText: 'This screen shows the planned trainee, trainer, and administrator access model. It remains disabled until secure authentication and a database are connected.',
+    loginTitle: 'Secure account access',
+    loginText: 'Sign in with Supabase Auth to access trainee, trainer, and administrator workflows. New accounts start as trainee profiles until a trainer/admin role is assigned.',
     modulesTitle: 'Official role-based training pathways',
     trainingArchitecture: 'Training Architecture',
     curriculum: 'Curriculum Pathway',
@@ -156,8 +166,8 @@ const content = {
     agendaPending: 'مسارات تعلم حسب الدور',
     dashboardTitle: 'لوحة تقدم المتدرب',
     dashboardText: 'تُحسب الكفاءات ونتيجة المحاكاة وجاهزية الشهادة من النشاط المحفوظ على هذا الجهاز.',
-    loginTitle: 'الوصول الآمن للحساب — مخطط له',
-    loginText: 'تعرض هذه الواجهة نموذج حسابات المتدربين والمدربين والإدارة، وتبقى معطلة حتى ربط مصادقة آمنة وقاعدة بيانات.',
+    loginTitle: 'الوصول الآمن للحساب',
+    loginText: 'سجّل الدخول عبر Supabase Auth للوصول إلى مسارات المتدرب والمدرب والإدارة. الحسابات الجديدة تبدأ كمتدرب حتى يتم تعيين صلاحية مدرب أو إدارة.',
     modulesTitle: 'مسارات تدريب رسمية حسب الدور الوظيفي',
     trainingArchitecture: 'هيكلة التدريب',
     curriculum: 'المسار التعليمي',
@@ -283,9 +293,90 @@ function Dashboard({ t, completed, totalCompetencies, simulationScore, scenarioC
   return <section id="dashboard" className="section dashboard-section"><p className="eyebrow">{rtl ? 'متابعة مباشرة' : 'Live progress'}</p><h2>{t.dashboardTitle}</h2><p className="section-lead">{t.dashboardText}</p><div className="dashboard-grid">{dashboardCards.map(([value, label, note], i) => { const icons = [BarChart3, ClipboardCheck, Activity, Award]; const Icon = icons[i]; return <div className="dash-card" key={label}><Icon /><strong>{value}</strong><span>{label}</span><small>{note}</small></div>; })}</div><div className="dashboard-panel"><div><h3>{matrixTitle}</h3><div className="progress-line" role="progressbar" aria-label={matrixTitle} aria-valuemin="0" aria-valuemax="100" aria-valuenow={pct}><span style={{ width: `${pct}%` }} /></div><small>{progressText}</small></div><div className="mini-list"><span><CheckCircle2 /> {rtl ? 'التقدم محفوظ محليًا' : 'Progress saved locally'}</span><span><CheckCircle2 /> {rtl ? 'المحاكاة التفاعلية مفعّلة' : 'Interactive simulation enabled'}</span><button className="text-button danger-button" type="button" onClick={onReset}><RotateCcw /> {resetLabel}</button></div></div></section>;
 }
 
-function LoginPrototype({ t }) {
+function LoginPrototype({ t, session, profile, onAuthChange }) {
   const rtl = t.dir === 'rtl';
-  return <section id="login" className="section login-section"><div className="login-copy"><p className="eyebrow">{rtl ? 'الوصول للحساب' : 'Account access'}</p><h2>{t.loginTitle}</h2><p>{t.loginText}</p><div className="role-tabs"><span>{rtl ? 'متدرب' : 'Trainee'}</span><span>{rtl ? 'مدرب' : 'Trainer'}</span><span>{rtl ? 'إدارة' : 'Admin'}</span></div></div><form className="login-card" onSubmit={e => e.preventDefault()} aria-label={t.loginTitle}><div className="login-logo"><LockKeyhole /><b>Cath Lab Academy</b></div><label><span>{rtl ? 'البريد أو الرقم الوظيفي' : 'Email / Staff ID'}</span><div><UserRound /><input type="email" placeholder={rtl ? 'سيُفعّل بعد ربط قاعدة البيانات' : 'Available after database setup'} disabled /></div></label><label><span>{rtl ? 'كلمة المرور' : 'Password'}</span><div><ShieldCheck /><input type="password" placeholder="••••••••" disabled /></div></label><button type="button" disabled><IdCard /> {rtl ? 'تسجيل الدخول — المرحلة القادمة' : 'Sign in — next phase'}</button><small>{rtl ? 'واجهة توضيحية فقط — لم يتم ربط المصادقة أو قاعدة البيانات.' : 'Interface preview only — authentication and database are not connected.'}</small></form></section>;
+  const [mode, setMode] = useState('signin');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const signedIn = Boolean(session?.user);
+
+  const labels = rtl
+    ? {
+        eyebrow: 'الوصول للحساب',
+        signedIn: 'تم تسجيل الدخول',
+        signIn: 'تسجيل الدخول',
+        create: 'إنشاء حساب متدرب',
+        name: 'الاسم الكامل',
+        email: 'البريد الإلكتروني',
+        password: 'كلمة المرور',
+        submitSignIn: 'دخول آمن',
+        submitCreate: 'إنشاء الحساب',
+        signOut: 'تسجيل الخروج',
+        connected: 'متصل بقاعدة بيانات Supabase Auth',
+        disabled: 'المصادقة غير مفعلة لأن إعداد Supabase غير موجود.',
+        success: 'تمت العملية بنجاح.',
+        role: 'الدور',
+        trainee: 'متدرب',
+        emailHint: 'example@hospital.org',
+        passwordHint: '8 أحرف على الأقل'
+      }
+    : {
+        eyebrow: 'Account access',
+        signedIn: 'Signed in',
+        signIn: 'Sign in',
+        create: 'Create trainee account',
+        name: 'Full name',
+        email: 'Email',
+        password: 'Password',
+        submitSignIn: 'Secure sign in',
+        submitCreate: 'Create account',
+        signOut: 'Sign out',
+        connected: 'Connected to Supabase Auth database',
+        disabled: 'Authentication is disabled because Supabase config is missing.',
+        success: 'Action completed successfully.',
+        role: 'Role',
+        trainee: 'Trainee',
+        emailHint: 'example@hospital.org',
+        passwordHint: 'At least 8 characters'
+      };
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage('');
+    try {
+      if (mode === 'signup') {
+        await signUpWithEmail(email.trim(), password, fullName.trim());
+      } else {
+        await signInWithEmail(email.trim(), password);
+      }
+      setPassword('');
+      setMessage(labels.success);
+      await onAuthChange();
+    } catch (error) {
+      setMessage(error.message || String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSignOut() {
+    setBusy(true);
+    setMessage('');
+    try {
+      await signOut();
+      await onAuthChange();
+    } catch (error) {
+      setMessage(error.message || String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <section id="login" className="section login-section"><div className="login-copy"><p className="eyebrow">{labels.eyebrow}</p><h2>{t.loginTitle}</h2><p>{t.loginText}</p><div className="role-tabs"><span>{rtl ? 'متدرب' : 'Trainee'}</span><span>{rtl ? 'مدرب' : 'Trainer'}</span><span>{rtl ? 'إدارة' : 'Admin'}</span></div><div className="quality-badges"><span><Database /> {isSupabaseConfigured ? labels.connected : labels.disabled}</span></div></div><form className="login-card" onSubmit={handleSubmit} aria-label={t.loginTitle}><div className="login-logo"><LockKeyhole /><b>Cath Lab Academy</b></div>{signedIn ? <><div className="auth-status-card"><IdCard /><div><strong>{profile?.full_name || session.user.email}</strong><small>{session.user.email}</small><small>{labels.role}: {profile?.role || labels.trainee}</small></div></div><button type="button" onClick={handleSignOut} disabled={busy}><XCircle /> {labels.signOut}</button></> : <><div className="role-tabs auth-mode-tabs"><button type="button" className={mode === 'signin' ? 'active' : ''} onClick={() => setMode('signin')}>{labels.signIn}</button><button type="button" className={mode === 'signup' ? 'active' : ''} onClick={() => setMode('signup')}>{labels.create}</button></div>{mode === 'signup' && <label><span>{labels.name}</span><div><UserRound /><input type="text" value={fullName} onChange={event => setFullName(event.target.value)} placeholder={rtl ? 'اسم المتدرب' : 'Trainee name'} disabled={!isSupabaseConfigured || busy} /></div></label>}<label><span>{labels.email}</span><div><UserRound /><input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder={labels.emailHint} required disabled={!isSupabaseConfigured || busy} /></div></label><label><span>{labels.password}</span><div><ShieldCheck /><input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder={labels.passwordHint} required minLength={8} disabled={!isSupabaseConfigured || busy} /></div></label><button type="submit" disabled={!isSupabaseConfigured || busy}><IdCard /> {mode === 'signup' ? labels.submitCreate : labels.submitSignIn}</button></>}{message && <small aria-live="polite">{message}</small>}</form></section>;
 }
 
 function ModuleCard({ module, active, onClick }) {
@@ -354,6 +445,8 @@ function App() {
   const [answers, setAnswers] = usePersistedState('cathlab-scenario-answers', {});
   const [catalogCourses, setCatalogCourses] = useState([]);
   const [catalogSource, setCatalogSource] = useState(isSupabaseConfigured ? 'loading' : 'fallback');
+  const [session, setSession] = useState(null);
+  const [profile, setProfile] = useState(null);
   const completed = countCompletedCompetencies(checks);
   const totalCompetencies = useMemo(() => t.modules.reduce((acc, m) => acc + m.competencies.length, 0), [t.modules]);
   const simulationScore = t.scenarios.reduce((acc, item, i) => acc + (answers[i] === item.answer ? 1 : 0), 0);
@@ -367,11 +460,29 @@ function App() {
     }
   };
 
+  async function refreshAuthState(nextSession) {
+    const currentSession = nextSession ?? await getCurrentSession();
+    setSession(currentSession);
+
+    if (currentSession?.user) {
+      await ensureProfile(currentSession.user);
+      const nextProfile = await fetchCurrentProfile(currentSession.user.id);
+      setProfile(nextProfile);
+    } else {
+      setProfile(null);
+    }
+  }
+
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = t.dir;
     document.title = lang === 'en' ? 'Cath Lab Academy | Professional Training Platform' : 'أكاديمية القسطرة القلبية | منصة تدريب احترافية';
   }, [lang, t.dir]);
+
+  useEffect(() => {
+    refreshAuthState();
+    return subscribeToAuthChanges(refreshAuthState);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -394,7 +505,7 @@ function App() {
     return () => { active = false; };
   }, [lang]);
 
-  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#about">{t.explore}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} /><LoginPrototype t={t} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#about">{t.explore}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);

@@ -141,7 +141,7 @@ p { color: var(--muted); line-height: 1.75; }
 .executive-overview { display: grid; grid-template-columns: .95fr 1.05fr; gap: 18px; }
 .overview-copy, .overview-card { border-radius: 30px; padding: 28px; }
 .quality-badges, .values-row, .role-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-.quality-badges span, .values-row span, .role-tabs span, .track-pill, .priority, .info-pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(124,58,237,.22); background: rgba(124,58,237,.08); color: #4c1d95; border-radius: 999px; padding: 8px 11px; font-size: 12px; font-weight: 850; }
+.quality-badges span,.values-row span,.role-tabs span,.role-tabs button,.track-pill,.priority,.info-pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(124,58,237,.22); background: rgba(124,58,237,.08); color: #4c1d95; border-radius: 999px; padding: 8px 11px; font-size: 12px; font-weight: 850; }
 .quality-badges svg, .values-row svg { width: 15px; }
 .overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .overview-card p { font-size: 14px; }
@@ -193,6 +193,13 @@ p { color: var(--muted); line-height: 1.75; }
 .login-card input { flex: 1; background: transparent; color: var(--text); border: 0; outline: 0; }
 .login-card button { justify-content: center; background: linear-gradient(90deg, var(--purple), var(--green)); color: #fff; border: 0; }
 .login-card small { color: var(--muted); }
+.auth-mode-tabs { margin-top: 0; }
+.auth-mode-tabs button { border-color: var(--line); background: rgba(255,255,255,.08); color: var(--text); }
+.auth-mode-tabs button.active { background: linear-gradient(90deg, #2f9ce8, var(--cyan)); color: #04111f; border: 0; }
+.auth-status-card { display: flex; gap: 14px; align-items: flex-start; border: 1px solid var(--line); background: rgba(255,255,255,.08); border-radius: 20px; padding: 16px; }
+.auth-status-card svg { color: var(--cyan); }
+.auth-status-card div { display: grid; gap: 4px; }
+.auth-status-card small { display: block; }
 .text-button { border: 0; background: transparent; color: var(--purple); padding: 8px 0; display: inline-flex; gap: 8px; align-items: center; font-weight: 850; }
 .danger-button { color: var(--red); }
 .module-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 18px 0; }

@@ -209,6 +209,13 @@ alter table audit_events enable row level security;
 -- before anon/authenticated roles can use PostgREST, even when RLS policies exist.
 grant usage on schema public to anon, authenticated;
 grant select on training_tracks, courses, course_sessions, competencies, simulation_scenarios to anon, authenticated;
+grant select, insert on profiles to authenticated;
+
+drop policy if exists "authenticated read own profile" on profiles;
+create policy "authenticated read own profile" on profiles for select to authenticated using (auth.uid() = auth_user_id);
+
+drop policy if exists "authenticated create own trainee profile" on profiles;
+create policy "authenticated create own trainee profile" on profiles for insert to authenticated with check (auth.uid() = auth_user_id and role = 'trainee');
 
 drop policy if exists "public read active tracks" on training_tracks;
 create policy "public read active tracks" on training_tracks for select using (active = true);
