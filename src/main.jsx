@@ -37,7 +37,6 @@ import {
   X,
   XCircle
 } from 'lucide-react';
-import { programInfo } from './programInfo.js';
 import {
   ensureProfile,
   enrollInCourse,
@@ -58,7 +57,7 @@ import './styles.css';
 const content = {
   en: {
     dir: 'ltr',
-    nav: ['Home', 'About', 'Catalog', 'Diploma', 'Dashboard', 'Login', 'Certificate'],
+    nav: ['Home', 'About', 'Catalog', 'Dashboard', 'Login', 'Certificate'],
     switchTo: 'العربية',
     heroTitle: 'Role-based Cath Lab training with competency validation',
     heroText: 'Discover Cath Lab courses, enroll as a trainee, track progress, complete simulation practice, and prepare for trainer-led competency sign-off.',
@@ -145,7 +144,7 @@ const content = {
   },
   ar: {
     dir: 'rtl',
-    nav: ['الرئيسية', 'من نحن', 'كتالوج التدريب', 'الدبلوم', 'لوحة التحكم', 'الدخول', 'الشهادة'],
+    nav: ['الرئيسية', 'من نحن', 'كتالوج التدريب', 'لوحة التحكم', 'الدخول', 'الشهادة'],
     switchTo: 'English',
     heroTitle: 'تدريب Cath Lab حسب الدور مع اعتماد الكفاءات',
     heroText: 'استعرض الدورات، سجّل كمتدرب، تابع تقدمك، تدرب بالمحاكاة، واستعد لاعتماد الكفاءة بإشراف المدرب.',
@@ -241,7 +240,7 @@ function Stat({ icon: Icon, value, label, note }) {
 
 function TopNav({ t, lang, setLang }) {
   const [open, setOpen] = useState(false);
-  const hrefs = ['#home', '#about', '#catalog', './program.html', '#dashboard', '#login', '#certificate'];
+  const hrefs = ['#home', '#about', '#catalog', '#dashboard', '#login', '#certificate'];
   const menuLabel = lang === 'ar' ? 'القائمة الرئيسية' : 'Main menu';
   return <nav className="topnav" aria-label={menuLabel}>
     <a className="brand" href="#home" onClick={() => setOpen(false)}><HeartPulse aria-hidden="true" /> Cath Lab Academy</a>
@@ -337,17 +336,6 @@ function TrainingCatalog({ t, courses, source, session, profile, onEnroll }) {
   return <section id="catalog" className="section catalog-section"><p className="eyebrow">{t.agendaPending}</p><h2>{t.trainingCatalogTitle}</h2><p className="section-lead">{t.trainingCatalogText}</p><div className="quality-badges"><span><Database /> {sourceLabel}</span><span><Users /> {rtl ? 'التسجيل يربط الدورة بملف المتدرب' : 'Enroll connects the course to the trainee profile'}</span></div><div className="catalog-toolbar"><label><span>{rtl ? 'بحث' : 'Search'}</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={rtl ? 'ابحث عن دورة أو مسار...' : 'Search courses or tracks...'} /></label><label><span>{rtl ? 'المسار' : 'Track'}</span><select value={trackFilter} onChange={event => setTrackFilter(event.target.value)}><option value="all">{rtl ? 'كل المسارات' : 'All tracks'}</option>{tracks.map(track => <option key={track} value={track}>{track}</option>)}</select></label><label><span>{rtl ? 'المستوى' : 'Level'}</span><select value={levelFilter} onChange={event => setLevelFilter(event.target.value)}><option value="all">{rtl ? 'كل المستويات' : 'All levels'}</option>{levels.map(level => <option key={level} value={level}>{level}</option>)}</select></label></div>{message && <p className="inline-alert" role="status">{message}</p>}<div className="catalog-grid">{visibleCourses.map(course => <article className="catalog-card" key={course.slug || course.title}><div><span className="track-pill">{course.track}</span><h3>{course.title}</h3><p>{course.description}</p></div><div className="catalog-meta"><span><Users /> {course.audience}</span><span><CalendarDays /> {course.duration}</span><span><Target /> {course.level}</span></div><button className="enroll-button" type="button" onClick={() => handleEnroll(course)}><CheckCircle2 /> {rtl ? 'سجّل في الدورة' : 'Enroll'}</button></article>)}</div>{visibleCourses.length === 0 && <p className="inline-alert">{rtl ? 'لا توجد دورات مطابقة للبحث الحالي.' : 'No courses match the current filters.'}</p>}</section>;
 }
 
-
-function ProgramInfoTeaser({ lang }) {
-  const t = programInfo[lang] || programInfo.en;
-  return <section id="program" className="section diploma-section program-teaser">
-    <p className="eyebrow">{t.eyebrow}</p>
-    <h2>{t.title}</h2>
-    <p className="section-lead">{t.subtitle}</p>
-    <div className="diploma-highlights">{t.highlights.map(([value, label, note]) => <a className="dash-card" href="./program.html" key={label}><GraduationCap /><strong>{value}</strong><span>{label}</span><small>{note}</small></a>)}</div>
-    <div className="hero-actions"><a href="./program.html">{t.cta}</a></div>
-  </section>;
-}
 
 function Dashboard({ t, completed, totalCompetencies, simulationScore, scenarioCount, certificateReady, onReset, session, profile, dashboardSummary }) {
   const rtl = t.dir === 'rtl';
@@ -610,7 +598,7 @@ function App() {
     return () => { active = false; };
   }, [lang]);
 
-  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><TrainerAdminDashboard t={t} profile={profile} summary={trainerSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><TrainerAdminDashboard t={t} profile={profile} summary={trainerSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
