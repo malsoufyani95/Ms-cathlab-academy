@@ -8,6 +8,14 @@ This project is currently a Vite/React static site. The database layer is prepar
 - API access from the frontend
 - Easy future admin dashboard integration
 
+## Setup status
+
+A Supabase project has been linked and the schema/seed data has been applied.
+
+- Project ref: `olehulhxaxfqljbqwwgp`
+- Project URL: `https://olehulhxaxfqljbqwwgp.supabase.co`
+- Verified public REST read for `training_tracks`: 4 rows
+
 ## Files
 
 - `database/schema.sql` — creates all tables, indexes, triggers, and starter RLS policies.

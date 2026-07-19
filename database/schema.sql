@@ -205,6 +205,11 @@ alter table certificates enable row level security;
 alter table audit_events enable row level security;
 
 -- Public read access for published catalog/demo content.
+-- Supabase projects created with newer API defaults require explicit GRANTs
+-- before anon/authenticated roles can use PostgREST, even when RLS policies exist.
+grant usage on schema public to anon, authenticated;
+grant select on training_tracks, courses, course_sessions, competencies, simulation_scenarios to anon, authenticated;
+
 drop policy if exists "public read active tracks" on training_tracks;
 create policy "public read active tracks" on training_tracks for select using (active = true);
 

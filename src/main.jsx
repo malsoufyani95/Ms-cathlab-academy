@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ClipboardCheck,
+  Database,
   Download,
   FileCheck2,
   Globe2,
@@ -37,6 +38,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { programInfo } from './programInfo.js';
+import { fetchCatalogCourses, isSupabaseConfigured } from './lib/supabase.js';
 import { usePersistedState } from './usePersistedState.js';
 import './styles.css';
 
@@ -247,8 +249,13 @@ function AboutSection({ t }) {
   return <section id="about" className="section about-section"><p className="eyebrow">{t.visionMissionTitle}</p><h2>{t.aboutTitle}</h2><div className="about-layout"><div className="about-main"><Building2 /><p>{t.aboutText}</p><div className="values-row">{t.values.map(value => <span key={value}><CheckCircle2 /> {value}</span>)}</div></div><div className="vm-card"><Target /><h3>{t.vision}</h3><p>{t.visionText}</p></div><div className="vm-card"><Sparkles /><h3>{t.mission}</h3><p>{t.missionText}</p></div></div></section>;
 }
 
-function TrainingCatalog({ t }) {
-  return <section id="catalog" className="section catalog-section"><p className="eyebrow">{t.agendaPending}</p><h2>{t.trainingCatalogTitle}</h2><p className="section-lead">{t.trainingCatalogText}</p><div className="catalog-grid">{t.catalogCourses.map(([track, title, desc, audience, date]) => <article className="catalog-card" key={title}><div><span className="track-pill">{track}</span><h3>{title}</h3><p>{desc}</p></div><div className="catalog-meta"><span><Users /> {audience}</span><span><CalendarDays /> {date}</span></div></article>)}</div></section>;
+function TrainingCatalog({ t, courses, source }) {
+  const catalogCourses = courses.length ? courses : t.catalogCourses;
+  const sourceLabel = source === 'supabase'
+    ? (t.dir === 'rtl' ? 'متصل بقاعدة بيانات Supabase' : 'Connected to Supabase database')
+    : (t.dir === 'rtl' ? 'بيانات تجريبية لحين اكتمال الربط' : 'Demo catalog fallback');
+
+  return <section id="catalog" className="section catalog-section"><p className="eyebrow">{t.agendaPending}</p><h2>{t.trainingCatalogTitle}</h2><p className="section-lead">{t.trainingCatalogText}</p><div className="quality-badges"><span><Database /> {sourceLabel}</span></div><div className="catalog-grid">{catalogCourses.map(([track, title, desc, audience, date]) => <article className="catalog-card" key={title}><div><span className="track-pill">{track}</span><h3>{title}</h3><p>{desc}</p></div><div className="catalog-meta"><span><Users /> {audience}</span><span><CalendarDays /> {date}</span></div></article>)}</div></section>;
 }
 
 
@@ -345,6 +352,8 @@ function App() {
   const t = content[lang] || content.en;
   const [checks, setChecks] = usePersistedState('cathlab-competencies', {});
   const [answers, setAnswers] = usePersistedState('cathlab-scenario-answers', {});
+  const [catalogCourses, setCatalogCourses] = useState([]);
+  const [catalogSource, setCatalogSource] = useState(isSupabaseConfigured ? 'loading' : 'fallback');
   const completed = countCompletedCompetencies(checks);
   const totalCompetencies = useMemo(() => t.modules.reduce((acc, m) => acc + m.competencies.length, 0), [t.modules]);
   const simulationScore = t.scenarios.reduce((acc, item, i) => acc + (answers[i] === item.answer ? 1 : 0), 0);
@@ -364,7 +373,28 @@ function App() {
     document.title = lang === 'en' ? 'Cath Lab Academy | Professional Training Platform' : 'أكاديمية القسطرة القلبية | منصة تدريب احترافية';
   }, [lang, t.dir]);
 
-  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#about">{t.explore}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} /><LoginPrototype t={t} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  useEffect(() => {
+    let active = true;
+
+    async function loadCatalog() {
+      if (!isSupabaseConfigured) {
+        setCatalogSource('fallback');
+        setCatalogCourses([]);
+        return;
+      }
+
+      setCatalogSource('loading');
+      const courses = await fetchCatalogCourses(lang);
+      if (!active) return;
+      setCatalogCourses(courses);
+      setCatalogSource(courses.length ? 'supabase' : 'fallback');
+    }
+
+    loadCatalog();
+    return () => { active = false; };
+  }, [lang]);
+
+  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#about">{t.explore}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{completed}<small>{t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} /><ProgramInfoTeaser lang={lang} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} /><LoginPrototype t={t} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
