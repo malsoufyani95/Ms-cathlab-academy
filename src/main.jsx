@@ -338,6 +338,49 @@ function TrainingCatalog({ t, courses, source, session, profile, onEnroll }) {
 
 
 
+
+function AITutor({ lang, session, profile }) {
+  const rtl = lang === 'ar';
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [status, setStatus] = useState('idle');
+  const [error, setError] = useState('');
+  const examples = rtl
+    ? ['كيف أتعامل مع Radial hematoma بعد PCI؟', 'اشرح لي دور circulating nurse في STEMI activation', 'اعطني مراجعة سريعة عن access site assessment']
+    : ['How should I respond to radial hematoma after PCI?', 'Explain the circulating nurse role during STEMI activation', 'Give me a quick review of access site assessment'];
+
+  async function askTutor(event) {
+    event.preventDefault();
+    setAnswer('');
+    setError('');
+    if (!session?.user) {
+      setError(rtl ? 'سجّل الدخول أولًا لاستخدام مساعد القسطرة الذكي.' : 'Sign in first to use CathLab AI Tutor.');
+      return;
+    }
+    if (question.trim().length < 3) {
+      setError(rtl ? 'اكتب سؤالًا تدريبيًا واضحًا.' : 'Enter a clear training question.');
+      return;
+    }
+    setStatus('loading');
+    try {
+      const response = await fetch('/api/ai-tutor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, lang, role: profile?.role || 'trainee' }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'AI request failed');
+      setAnswer(data.answer || '');
+      setStatus('done');
+    } catch (err) {
+      setError(err.message || String(err));
+      setStatus('error');
+    }
+  }
+
+  return <section id="ai-tutor" className="section ai-tutor-section"><div className="ai-tutor-copy"><p className="eyebrow">{rtl ? 'ذكاء تدريبي' : 'Training AI'}</p><h2>{rtl ? 'مساعد القسطرة الذكي' : 'CathLab AI Tutor'}</h2><p className="section-lead">{rtl ? 'اسأل مساعدًا تدريبيًا عن القسطرة، الأدوار، السلامة، الكفاءات، وسيناريوهات التدريب. الاستخدام تعليمي فقط ويحتاج تسجيل دخول.' : 'Ask a training assistant about Cath Lab roles, safety, competencies, and simulation scenarios. Education-only and sign-in required.'}</p><div className="quality-badges"><span><ShieldCheck /> {rtl ? 'تعليمي فقط' : 'Education only'}</span><span><LockKeyhole /> {rtl ? 'يتطلب تسجيل دخول' : 'Login required'}</span><span><Brain /> OpenAI</span></div></div><form className="ai-tutor-card" onSubmit={askTutor}><label><span>{rtl ? 'سؤالك' : 'Your question'}</span><textarea value={question} onChange={event => setQuestion(event.target.value)} maxLength={1200} rows={5} placeholder={rtl ? 'مثال: كيف أتصرف عند حدوث radial hematoma؟' : 'Example: How should I respond to radial hematoma?'} /></label><div className="ai-example-row">{examples.map(example => <button key={example} type="button" onClick={() => setQuestion(example)}>{example}</button>)}</div><button className="ai-submit" type="submit" disabled={status === 'loading'}><Sparkles /> {status === 'loading' ? (rtl ? 'جاري التفكير...' : 'Thinking...') : (rtl ? 'اسأل المساعد' : 'Ask tutor')}</button>{error && <p className="inline-alert danger-alert" role="alert">{error}</p>}{answer && <article className="ai-answer"><h3>{rtl ? 'الإجابة التدريبية' : 'Training answer'}</h3><p>{answer}</p></article>}<small>{rtl ? 'المساعد لا يستبدل سياسة المستشفى أو الحكم السريري.' : 'The tutor does not replace hospital policy or clinical judgment.'}</small></form></section>;
+}
+
 function Dashboard({ t, completed, totalCompetencies, simulationScore, scenarioCount, certificateReady, onReset, session, profile, dashboardSummary }) {
   const rtl = t.dir === 'rtl';
   const usingDatabase = Boolean(session?.user && profile && dashboardSummary);
@@ -599,7 +642,7 @@ function App() {
     return () => { active = false; };
   }, [lang]);
 
-  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><TrainerAdminDashboard t={t} profile={profile} summary={trainerSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><AITutor lang={lang} session={session} profile={profile} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><TrainerAdminDashboard t={t} profile={profile} summary={trainerSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
