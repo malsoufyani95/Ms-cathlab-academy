@@ -242,15 +242,20 @@ function Stat({ icon: Icon, value, label, note }) {
   return <div className="stat"><Icon /><strong>{value}</strong><span>{label}</span><small>{note}</small></div>;
 }
 
-function TopNav({ t, lang, setLang }) {
+function TopNav({ t, lang, setLang, session, profile, onSignOut }) {
   const [open, setOpen] = useState(false);
   const hrefs = ['#home', '#about', '#catalog', '#resources', './program.html', '#dashboard', '#login', '#certificate'];
   const menuLabel = lang === 'ar' ? 'القائمة الرئيسية' : 'Main menu';
+  const signedIn = Boolean(session?.user);
+  const accountLabel = profile?.full_name || session?.user?.email || '';
+  const signOutLabel = lang === 'ar' ? 'تسجيل الخروج' : 'Sign out';
   return <nav className="topnav" aria-label={menuLabel}>
     <a className="brand" href="#home" onClick={() => setOpen(false)}><HeartPulse aria-hidden="true" /> Cath Lab Academy</a>
     <button className="mobile-menu-toggle" type="button" aria-label={menuLabel} aria-expanded={open} aria-controls="primary-navigation" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
     <div id="primary-navigation" className={`nav-links ${open ? 'open' : ''}`}>
       {t.nav.map((label, i) => <a key={hrefs[i]} href={hrefs[i]} onClick={() => setOpen(false)}>{label}</a>)}
+      {signedIn && <span className="account-chip"><UserRound /> {accountLabel}</span>}
+      {signedIn && <button className="nav-signout" type="button" onClick={async () => { setOpen(false); await onSignOut(); }}><XCircle /> {signOutLabel}</button>}
       <button className="language-toggle" type="button" onClick={() => { setLang(lang === 'en' ? 'ar' : 'en'); setOpen(false); }}><Globe2 /> {t.switchTo}</button>
     </div>
   </nav>;
@@ -737,6 +742,12 @@ function App() {
     await refreshResources();
   }
 
+
+  async function handleSignOutEverywhere() {
+    await signOut();
+    await refreshAuthState(null);
+  }
+
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = t.dir;
@@ -774,7 +785,7 @@ function App() {
     refreshResources();
   }, [session?.user?.id, profile?.role, lang]);
 
-  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><TrainingLibrary lang={lang} courses={catalogCourses} resources={resources} loading={resourcesLoading} session={session} profile={profile} onUpload={handleResourceUpload} onRefresh={refreshResources} /><AITutor lang={lang} session={session} profile={profile} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><TrainerAdminDashboard t={t} profile={profile} summary={trainerSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} session={session} profile={profile} onSignOut={handleSignOutEverywhere} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><TrainingLibrary lang={lang} courses={catalogCourses} resources={resources} loading={resourcesLoading} session={session} profile={profile} onUpload={handleResourceUpload} onRefresh={refreshResources} /><AITutor lang={lang} session={session} profile={profile} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><TrainerAdminDashboard t={t} profile={profile} summary={trainerSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
