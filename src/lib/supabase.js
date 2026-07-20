@@ -269,3 +269,107 @@ export async function fetchTrainerDashboardSummary(profile) {
     averageProgress,
   };
 }
+
+export async function fetchLearningResources(lang = 'en') {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('learning_resources')
+    .select(`
+      id,
+      title,
+      description,
+      resource_type,
+      visibility,
+      storage_bucket,
+      storage_path,
+      file_name,
+      file_mime_type,
+      file_size_bytes,
+      external_url,
+      created_at,
+      courses (
+        title_en,
+        title_ar,
+        slug
+      ),
+      profiles (
+        full_name,
+        role
+      )
+    `)
+    .eq('active', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn('Unable to load learning resources:', error.message);
+    return [];
+  }
+
+  const rows = data || [];
+  const signedResults = await Promise.all(rows.map(async (resource) => {
+    if (resource.external_url) return resource.external_url;
+    const { data: signed, error: signedError } = await supabase
+      .storage
+      .from(resource.storage_bucket || 'training-files')
+      .createSignedUrl(resource.storage_path, 60 * 60);
+    if (signedError) {
+      console.warn('Unable to sign resource URL:', signedError.message);
+      return '';
+    }
+    return signed?.signedUrl || '';
+  }));
+
+  return rows.map((resource, index) => ({
+    ...resource,
+    courseTitle: lang === 'ar'
+      ? resource.courses?.title_ar || resource.courses?.title_en
+      : resource.courses?.title_en,
+    uploadedBy: resource.profiles?.full_name || '',
+    signedUrl: signedResults[index],
+  }));
+}
+
+export async function uploadLearningResource({ file, title, description, courseId, resourceType, visibility, profileId }) {
+  if (!supabase) throw new Error('Supabase is not configured.');
+  if (!file) throw new Error('Select a training file first.');
+  if (!profileId) throw new Error('Trainer/Admin profile is required.');
+  if (!title?.trim()) throw new Error('Resource title is required.');
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'training-file';
+  const path = `${profileId}/${Date.now()}-${safeName}`;
+  const bucket = 'training-files';
+
+  const { error: uploadError } = await supabase
+    .storage
+    .from(bucket)
+    .upload(path, file, {
+      cacheControl: '3600',
+      contentType: file.type || 'application/octet-stream',
+      upsert: false,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data, error } = await supabase
+    .from('learning_resources')
+    .insert({
+      course_id: courseId || null,
+      uploaded_by: profileId,
+      title: title.trim(),
+      description: description?.trim() || null,
+      resource_type: resourceType || 'document',
+      visibility: visibility || 'trainee',
+      storage_bucket: bucket,
+      storage_path: path,
+      file_name: file.name,
+      file_mime_type: file.type || 'application/octet-stream',
+      file_size_bytes: file.size || 0,
+    })
+    .select('id, title, storage_path')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+

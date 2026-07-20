@@ -80,6 +80,26 @@ create table if not exists course_sessions (
   created_at timestamptz not null default now()
 );
 
+
+create table if not exists learning_resources (
+  id uuid primary key default gen_random_uuid(),
+  course_id uuid references courses(id) on delete set null,
+  uploaded_by uuid references profiles(id) on delete set null,
+  title text not null,
+  description text,
+  resource_type text not null default 'document' check (resource_type in ('document', 'presentation', 'video', 'image', 'arvr_model', 'checklist', 'other')),
+  visibility text not null default 'trainee' check (visibility in ('trainee', 'trainer', 'admin')),
+  storage_bucket text not null default 'training-files',
+  storage_path text not null,
+  file_name text not null,
+  file_mime_type text,
+  file_size_bytes bigint,
+  external_url text,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists enrollments (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references profiles(id) on delete cascade,
@@ -176,6 +196,9 @@ create table if not exists audit_events (
 create index if not exists idx_profiles_role on profiles(role);
 create index if not exists idx_courses_track on courses(track_id);
 create index if not exists idx_sessions_course on course_sessions(course_id);
+create index if not exists idx_learning_resources_course on learning_resources(course_id);
+create index if not exists idx_learning_resources_uploaded_by on learning_resources(uploaded_by);
+create index if not exists idx_learning_resources_visibility on learning_resources(visibility);
 create index if not exists idx_enrollments_profile on enrollments(profile_id);
 create index if not exists idx_enrollments_course on enrollments(course_id);
 create index if not exists idx_competency_assessments_trainee on competency_assessments(trainee_id);
@@ -202,6 +225,10 @@ drop trigger if exists trg_competency_assessments_updated_at on competency_asses
 create trigger trg_competency_assessments_updated_at before update on competency_assessments
 for each row execute function set_updated_at();
 
+drop trigger if exists trg_learning_resources_updated_at on learning_resources;
+create trigger trg_learning_resources_updated_at before update on learning_resources
+for each row execute function set_updated_at();
+
 -- Row Level Security preparation for Supabase.
 alter table profiles enable row level security;
 alter table training_tracks enable row level security;
@@ -214,6 +241,7 @@ alter table simulation_scenarios enable row level security;
 alter table simulation_attempts enable row level security;
 alter table certificates enable row level security;
 alter table audit_events enable row level security;
+alter table learning_resources enable row level security;
 
 -- Public read access for published catalog/demo content.
 -- Supabase projects created with newer API defaults require explicit GRANTs
@@ -221,6 +249,7 @@ alter table audit_events enable row level security;
 grant usage on schema public to anon, authenticated;
 grant select on training_tracks, courses, course_sessions, competencies, simulation_scenarios to anon, authenticated;
 grant select, insert on profiles to authenticated;
+grant select, insert, update on learning_resources to authenticated;
 
 create or replace function public.current_user_role()
 returns app_role
@@ -296,6 +325,73 @@ create policy "public read active competencies" on competencies for select using
 
 drop policy if exists "public read active scenarios" on simulation_scenarios;
 create policy "public read active scenarios" on simulation_scenarios for select using (active = true);
+
+
+-- Training resource library and upload center.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'training-files',
+  'training-files',
+  false,
+  52428800,
+  array[
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword',
+    'application/vnd.ms-powerpoint',
+    'video/mp4',
+    'image/png',
+    'image/jpeg',
+    'model/gltf-binary',
+    'model/gltf+json',
+    'application/octet-stream'
+  ]
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "authenticated read training files" on storage.objects;
+create policy "authenticated read training files" on storage.objects for select to authenticated using (bucket_id = 'training-files');
+
+drop policy if exists "trainer admin upload training files" on storage.objects;
+create policy "trainer admin upload training files" on storage.objects for insert to authenticated with check (
+  bucket_id = 'training-files'
+  and public.current_user_role() in ('trainer', 'admin')
+);
+
+drop policy if exists "trainer admin update training files" on storage.objects;
+create policy "trainer admin update training files" on storage.objects for update to authenticated using (
+  bucket_id = 'training-files'
+  and public.current_user_role() in ('trainer', 'admin')
+) with check (
+  bucket_id = 'training-files'
+  and public.current_user_role() in ('trainer', 'admin')
+);
+
+drop policy if exists "authenticated read active resources" on learning_resources;
+create policy "authenticated read active resources" on learning_resources for select to authenticated using (
+  active = true
+  and (
+    visibility = 'trainee'
+    or public.current_user_role() in ('trainer', 'admin')
+  )
+);
+
+drop policy if exists "trainer admin create resources" on learning_resources;
+create policy "trainer admin create resources" on learning_resources for insert to authenticated with check (
+  public.current_user_role() in ('trainer', 'admin')
+  and exists (select 1 from profiles p where p.id = learning_resources.uploaded_by and p.auth_user_id = auth.uid())
+);
+
+drop policy if exists "trainer admin update resources" on learning_resources;
+create policy "trainer admin update resources" on learning_resources for update to authenticated using (
+  public.current_user_role() in ('trainer', 'admin')
+) with check (
+  public.current_user_role() in ('trainer', 'admin')
+);
 
 -- Service role/admin backend should manage private trainee records.
 -- Add authenticated user policies after Supabase Auth is connected.

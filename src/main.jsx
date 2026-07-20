@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
   Database,
   Download,
+  FileText,
   FileCheck2,
   Globe2,
   GraduationCap,
@@ -31,6 +32,7 @@ import {
   Stethoscope,
   Target,
   Trophy,
+  UploadCloud,
   UserRound,
   Users,
   View,
@@ -43,13 +45,15 @@ import {
   fetchCatalogCourses,
   fetchCurrentProfile,
   fetchDashboardSummary,
+  fetchLearningResources,
   fetchTrainerDashboardSummary,
   getCurrentSession,
   isSupabaseConfigured,
   signInWithEmail,
   signOut,
   signUpWithEmail,
-  subscribeToAuthChanges
+  subscribeToAuthChanges,
+  uploadLearningResource
 } from './lib/supabase.js';
 import { usePersistedState } from './usePersistedState.js';
 import './styles.css';
@@ -57,7 +61,7 @@ import './styles.css';
 const content = {
   en: {
     dir: 'ltr',
-    nav: ['Home', 'About', 'Catalog', 'Diploma', 'Dashboard', 'Login', 'Certificate'],
+    nav: ['Home', 'About', 'Catalog', 'Library', 'Diploma', 'Dashboard', 'Login', 'Certificate'],
     switchTo: 'العربية',
     heroTitle: 'Role-based Cath Lab training with competency validation',
     heroText: 'Discover Cath Lab courses, enroll as a trainee, track progress, complete simulation practice, and prepare for trainer-led competency sign-off.',
@@ -144,7 +148,7 @@ const content = {
   },
   ar: {
     dir: 'rtl',
-    nav: ['الرئيسية', 'من نحن', 'كتالوج التدريب', 'الدبلوم', 'لوحة التحكم', 'الدخول', 'الشهادة'],
+    nav: ['الرئيسية', 'من نحن', 'كتالوج التدريب', 'مكتبة التدريب', 'الدبلوم', 'لوحة التحكم', 'الدخول', 'الشهادة'],
     switchTo: 'English',
     heroTitle: 'تدريب Cath Lab حسب الدور مع اعتماد الكفاءات',
     heroText: 'استعرض الدورات، سجّل كمتدرب، تابع تقدمك، تدرب بالمحاكاة، واستعد لاعتماد الكفاءة بإشراف المدرب.',
@@ -240,7 +244,7 @@ function Stat({ icon: Icon, value, label, note }) {
 
 function TopNav({ t, lang, setLang }) {
   const [open, setOpen] = useState(false);
-  const hrefs = ['#home', '#about', '#catalog', './program.html', '#dashboard', '#login', '#certificate'];
+  const hrefs = ['#home', '#about', '#catalog', '#resources', './program.html', '#dashboard', '#login', '#certificate'];
   const menuLabel = lang === 'ar' ? 'القائمة الرئيسية' : 'Main menu';
   return <nav className="topnav" aria-label={menuLabel}>
     <a className="brand" href="#home" onClick={() => setOpen(false)}><HeartPulse aria-hidden="true" /> Cath Lab Academy</a>
@@ -338,6 +342,108 @@ function TrainingCatalog({ t, courses, source, session, profile, onEnroll }) {
 
 
 
+
+
+function formatFileSize(bytes, rtl) {
+  const size = Number(bytes || 0);
+  if (!size) return rtl ? 'حجم غير محدد' : 'Size unavailable';
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function TrainingLibrary({ lang, courses, resources, loading, session, profile, onUpload, onRefresh }) {
+  const rtl = lang === 'ar';
+  const canUpload = Boolean(profile && ['trainer', 'admin'].includes(profile.role));
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [courseId, setCourseId] = useState('');
+  const [resourceType, setResourceType] = useState('document');
+  const [visibility, setVisibility] = useState('trainee');
+  const [file, setFile] = useState(null);
+  const [status, setStatus] = useState('');
+  const [busy, setBusy] = useState(false);
+  const courseOptions = courses.filter(course => course.id);
+  const labels = rtl
+    ? {
+        eyebrow: 'مكتبة التدريب',
+        title: 'Training Library + Upload Center',
+        lead: 'ارفع ملفات التدريب بشكل آمن، اربطها بالدورات، واعرضها للمتدربين من Supabase Storage.',
+        login: 'سجّل الدخول لعرض مكتبة التدريب.',
+        uploadOnly: 'الرفع مخصص للمدرب أو الإدارة فقط. المتدرب يشاهد الملفات المتاحة له.',
+        uploadTitle: 'رفع ملف تدريبي',
+        resourceTitle: 'عنوان الملف',
+        description: 'وصف مختصر',
+        course: 'الدورة المرتبطة',
+        noCourse: 'بدون دورة محددة',
+        type: 'نوع الملف',
+        visibility: 'الصلاحية',
+        file: 'الملف',
+        submit: 'رفع الملف',
+        uploading: 'جاري الرفع...',
+        uploaded: 'تم رفع الملف وحفظ بياناته.',
+        empty: 'لا توجد ملفات تدريب مرفوعة بعد.',
+        refresh: 'تحديث المكتبة',
+        open: 'فتح / تحميل',
+        uploadedBy: 'رفع بواسطة',
+        types: { document: 'مستند PDF/DOC', presentation: 'عرض PPT', video: 'فيديو', image: 'صورة', arvr_model: 'نموذج 3D/AR', checklist: 'Checklist', other: 'أخرى' },
+        vis: { trainee: 'متاح للمتدربين', trainer: 'مدرب/إدارة', admin: 'إدارة فقط' }
+      }
+    : {
+        eyebrow: 'Training Library',
+        title: 'Training Library + Upload Center',
+        lead: 'Upload training files securely, attach them to courses, and publish them to learners from Supabase Storage.',
+        login: 'Sign in to view the training library.',
+        uploadOnly: 'Upload is limited to Trainer/Admin. Trainees can view assigned resources.',
+        uploadTitle: 'Upload training file',
+        resourceTitle: 'Resource title',
+        description: 'Short description',
+        course: 'Linked course',
+        noCourse: 'No specific course',
+        type: 'File type',
+        visibility: 'Visibility',
+        file: 'File',
+        submit: 'Upload file',
+        uploading: 'Uploading...',
+        uploaded: 'File uploaded and indexed.',
+        empty: 'No training resources uploaded yet.',
+        refresh: 'Refresh library',
+        open: 'Open / download',
+        uploadedBy: 'Uploaded by',
+        types: { document: 'PDF/DOC document', presentation: 'PPT presentation', video: 'Video', image: 'Image', arvr_model: '3D/AR model', checklist: 'Checklist', other: 'Other' },
+        vis: { trainee: 'Available to trainees', trainer: 'Trainer/Admin', admin: 'Admin only' }
+      };
+
+  async function submitUpload(event) {
+    event.preventDefault();
+    setStatus('');
+    if (!canUpload) {
+      setStatus(labels.uploadOnly);
+      return;
+    }
+    if (!file) {
+      setStatus(rtl ? 'اختر ملفًا أولًا.' : 'Select a file first.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await onUpload({ file, title, description, courseId, resourceType, visibility });
+      setTitle('');
+      setDescription('');
+      setCourseId('');
+      setResourceType('document');
+      setVisibility('trainee');
+      setFile(null);
+      event.currentTarget.reset();
+      setStatus(labels.uploaded);
+    } catch (error) {
+      setStatus(error.message || String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <section id="resources" className="section resources-section"><p className="eyebrow">{labels.eyebrow}</p><h2>{labels.title}</h2><p className="section-lead">{labels.lead}</p><div className="quality-badges"><span><Database /> Supabase Storage</span><span><ShieldCheck /> {labels.uploadOnly}</span><span><FileText /> PDF • PPTX • DOCX • MP4 • GLB</span></div>{!session?.user && <p className="inline-alert">{labels.login}</p>}<div className="resources-layout"><div className="resource-library-card"><div className="library-head"><h3>{rtl ? 'الملفات المتاحة' : 'Available resources'}</h3><button type="button" className="text-button" onClick={onRefresh} disabled={!session?.user || loading}><RotateCcw /> {labels.refresh}</button></div>{loading && <p className="inline-alert">{rtl ? 'جاري تحميل المكتبة...' : 'Loading library...'}</p>}{!loading && resources.length === 0 && <p className="inline-alert">{labels.empty}</p>}<div className="resource-list">{resources.map(resource => <article key={resource.id} className="resource-item"><div><span className="track-pill">{labels.types[resource.resource_type] || resource.resource_type}</span><h3>{resource.title}</h3>{resource.description && <p>{resource.description}</p>}<div className="catalog-meta"><span><BookOpen /> {resource.courseTitle || labels.noCourse}</span><span><FileCheck2 /> {resource.file_name}</span><span><Database /> {formatFileSize(resource.file_size_bytes, rtl)}</span>{resource.uploadedBy && <span><UserRound /> {labels.uploadedBy}: {resource.uploadedBy}</span>}</div></div>{resource.signedUrl ? <a className="enroll-button" href={resource.signedUrl} target="_blank" rel="noreferrer"><Download /> {labels.open}</a> : <span className="inline-alert">{rtl ? 'الرابط غير متاح' : 'Link unavailable'}</span>}</article>)}</div></div><form className="upload-card" onSubmit={submitUpload}><h3><UploadCloud /> {labels.uploadTitle}</h3><label><span>{labels.resourceTitle}</span><input value={title} onChange={event => setTitle(event.target.value)} placeholder={rtl ? 'مثال: RHC Lecture PDF' : 'Example: RHC Lecture PDF'} disabled={!canUpload || busy} required /></label><label><span>{labels.description}</span><textarea value={description} onChange={event => setDescription(event.target.value)} rows={3} placeholder={rtl ? 'ماذا يحتوي الملف؟' : 'What does this file include?'} disabled={!canUpload || busy} /></label><label><span>{labels.course}</span><select value={courseId} onChange={event => setCourseId(event.target.value)} disabled={!canUpload || busy}><option value="">{labels.noCourse}</option>{courseOptions.map(course => <option key={course.id} value={course.id}>{course.title}</option>)}</select></label><div className="upload-grid"><label><span>{labels.type}</span><select value={resourceType} onChange={event => setResourceType(event.target.value)} disabled={!canUpload || busy}>{Object.entries(labels.types).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label><span>{labels.visibility}</span><select value={visibility} onChange={event => setVisibility(event.target.value)} disabled={!canUpload || busy}>{Object.entries(labels.vis).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div><label><span>{labels.file}</span><input type="file" onChange={event => setFile(event.target.files?.[0] || null)} disabled={!canUpload || busy} accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.png,.jpg,.jpeg,.glb,.gltf" required /></label><button className="ai-submit" type="submit" disabled={!canUpload || busy}><UploadCloud /> {busy ? labels.uploading : labels.submit}</button>{status && <p className="inline-alert" role="status">{status}</p>}</form></div></section>;
+}
 
 function AITutor({ lang, session, profile }) {
   const rtl = lang === 'ar';
@@ -573,6 +679,8 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [dashboardSummary, setDashboardSummary] = useState(null);
   const [trainerSummary, setTrainerSummary] = useState(null);
+  const [resources, setResources] = useState([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
   const completed = countCompletedCompetencies(checks);
   const totalCompetencies = useMemo(() => t.modules.reduce((acc, m) => acc + m.competencies.length, 0), [t.modules]);
   const simulationScore = t.scenarios.reduce((acc, item, i) => acc + (answers[i] === item.answer ? 1 : 0), 0);
@@ -610,6 +718,25 @@ function App() {
     setTrainerSummary(await fetchTrainerDashboardSummary(profile));
   }
 
+
+  async function refreshResources() {
+    if (!session?.user) {
+      setResources([]);
+      return;
+    }
+    setResourcesLoading(true);
+    try {
+      setResources(await fetchLearningResources(lang));
+    } finally {
+      setResourcesLoading(false);
+    }
+  }
+
+  async function handleResourceUpload(payload) {
+    await uploadLearningResource({ ...payload, profileId: profile?.id });
+    await refreshResources();
+  }
+
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = t.dir;
@@ -642,7 +769,12 @@ function App() {
     return () => { active = false; };
   }, [lang]);
 
-  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><AITutor lang={lang} session={session} profile={profile} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><TrainerAdminDashboard t={t} profile={profile} summary={trainerSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+
+  useEffect(() => {
+    refreshResources();
+  }, [session?.user?.id, profile?.role, lang]);
+
+  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><TrainingLibrary lang={lang} courses={catalogCourses} resources={resources} loading={resourcesLoading} session={session} profile={profile} onUpload={handleResourceUpload} onRefresh={refreshResources} /><AITutor lang={lang} session={session} profile={profile} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><TrainerAdminDashboard t={t} profile={profile} summary={trainerSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
