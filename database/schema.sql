@@ -100,6 +100,48 @@ create table if not exists learning_resources (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists knowledge_modules (
+  id text primary key,
+  program_slug text not null default 'pci-training',
+  title text not null,
+  track text,
+  module_order integer,
+  source_title text,
+  source_start_page integer,
+  estimated_duration_minutes integer,
+  learning_objectives jsonb not null default '[]'::jsonb,
+  key_concepts jsonb not null default '[]'::jsonb,
+  procedure_notes jsonb not null default '[]'::jsonb,
+  safety_points jsonb not null default '[]'::jsonb,
+  competency_checklist jsonb not null default '[]'::jsonb,
+  clinical_scenario jsonb not null default '{}'::jsonb,
+  quiz_questions jsonb not null default '[]'::jsonb,
+  references_list jsonb not null default '[]'::jsonb,
+  raw_payload jsonb not null default '{}'::jsonb,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists knowledge_chunks (
+  id text primary key,
+  module_id text not null references knowledge_modules(id) on delete cascade,
+  program_slug text not null default 'pci-training',
+  document_id text,
+  part_id text,
+  part_title text,
+  chapter_number integer,
+  chapter_title text,
+  content_type text,
+  language text default 'en',
+  pdf_page_start integer,
+  pdf_page_end integer,
+  chunk_text text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists enrollments (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references profiles(id) on delete cascade,
@@ -199,6 +241,12 @@ create index if not exists idx_sessions_course on course_sessions(course_id);
 create index if not exists idx_learning_resources_course on learning_resources(course_id);
 create index if not exists idx_learning_resources_uploaded_by on learning_resources(uploaded_by);
 create index if not exists idx_learning_resources_visibility on learning_resources(visibility);
+create index if not exists idx_knowledge_modules_program on knowledge_modules(program_slug);
+create index if not exists idx_knowledge_modules_track on knowledge_modules(track);
+create index if not exists idx_knowledge_chunks_module on knowledge_chunks(module_id);
+create index if not exists idx_knowledge_chunks_program on knowledge_chunks(program_slug);
+create index if not exists idx_knowledge_chunks_chapter on knowledge_chunks(chapter_number);
+create index if not exists idx_knowledge_chunks_text_search on knowledge_chunks using gin (to_tsvector('english', chunk_text));
 create index if not exists idx_enrollments_profile on enrollments(profile_id);
 create index if not exists idx_enrollments_course on enrollments(course_id);
 create index if not exists idx_competency_assessments_trainee on competency_assessments(trainee_id);
@@ -229,6 +277,10 @@ drop trigger if exists trg_learning_resources_updated_at on learning_resources;
 create trigger trg_learning_resources_updated_at before update on learning_resources
 for each row execute function set_updated_at();
 
+drop trigger if exists trg_knowledge_modules_updated_at on knowledge_modules;
+create trigger trg_knowledge_modules_updated_at before update on knowledge_modules
+for each row execute function set_updated_at();
+
 -- Row Level Security preparation for Supabase.
 alter table profiles enable row level security;
 alter table training_tracks enable row level security;
@@ -242,6 +294,8 @@ alter table simulation_attempts enable row level security;
 alter table certificates enable row level security;
 alter table audit_events enable row level security;
 alter table learning_resources enable row level security;
+alter table knowledge_modules enable row level security;
+alter table knowledge_chunks enable row level security;
 
 -- Public read access for published catalog/demo content.
 -- Supabase projects created with newer API defaults require explicit GRANTs
@@ -250,6 +304,8 @@ grant usage on schema public to anon, authenticated;
 grant select on training_tracks, courses, course_sessions, competencies, simulation_scenarios to anon, authenticated;
 grant select, insert on profiles to authenticated;
 grant select, insert, update on learning_resources to authenticated;
+grant select on knowledge_modules, knowledge_chunks to authenticated;
+grant insert, update, delete on knowledge_modules, knowledge_chunks to authenticated;
 
 create or replace function public.current_user_role()
 returns app_role
@@ -388,6 +444,26 @@ create policy "trainer admin create resources" on learning_resources for insert 
 
 drop policy if exists "trainer admin update resources" on learning_resources;
 create policy "trainer admin update resources" on learning_resources for update to authenticated using (
+  public.current_user_role() in ('trainer', 'admin')
+) with check (
+  public.current_user_role() in ('trainer', 'admin')
+);
+
+drop policy if exists "authenticated read active knowledge modules" on knowledge_modules;
+create policy "authenticated read active knowledge modules" on knowledge_modules for select to authenticated using (active = true);
+
+drop policy if exists "authenticated read active knowledge chunks" on knowledge_chunks;
+create policy "authenticated read active knowledge chunks" on knowledge_chunks for select to authenticated using (active = true);
+
+drop policy if exists "trainer admin manage knowledge modules" on knowledge_modules;
+create policy "trainer admin manage knowledge modules" on knowledge_modules for all to authenticated using (
+  public.current_user_role() in ('trainer', 'admin')
+) with check (
+  public.current_user_role() in ('trainer', 'admin')
+);
+
+drop policy if exists "trainer admin manage knowledge chunks" on knowledge_chunks;
+create policy "trainer admin manage knowledge chunks" on knowledge_chunks for all to authenticated using (
   public.current_user_role() in ('trainer', 'admin')
 ) with check (
   public.current_user_role() in ('trainer', 'admin')
