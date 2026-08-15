@@ -270,6 +270,43 @@ export async function fetchTrainerDashboardSummary(profile) {
   };
 }
 
+
+export async function fetchKnowledgeModules(programSlug = 'pci-training') {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('knowledge_modules')
+    .select(`
+      id,
+      program_slug,
+      title,
+      track,
+      module_order,
+      source_title,
+      source_start_page,
+      estimated_duration_minutes,
+      learning_objectives,
+      key_concepts,
+      procedure_notes,
+      safety_points,
+      competency_checklist,
+      clinical_scenario,
+      quiz_questions,
+      references_list,
+      active
+    `)
+    .eq('program_slug', programSlug)
+    .eq('active', true)
+    .order('module_order', { ascending: true });
+
+  if (error) {
+    console.warn('Unable to load knowledge modules:', error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
 export async function fetchLearningResources(lang = 'en') {
   if (!supabase) return [];
 

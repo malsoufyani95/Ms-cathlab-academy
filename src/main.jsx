@@ -45,6 +45,7 @@ import {
   fetchCatalogCourses,
   fetchCurrentProfile,
   fetchDashboardSummary,
+  fetchKnowledgeModules,
   fetchLearningResources,
   fetchTrainerDashboardSummary,
   getCurrentSession,
@@ -61,7 +62,7 @@ import './styles.css';
 const content = {
   en: {
     dir: 'ltr',
-    nav: ['Home', 'About', 'Catalog', 'Library', 'Diploma', 'Dashboard', 'Login', 'Certificate'],
+    nav: ['Home', 'About', 'Catalog', 'Library', 'PCI Knowledge', 'Diploma', 'Dashboard', 'Login', 'Certificate'],
     switchTo: 'العربية',
     heroTitle: 'Role-based Cath Lab training with competency validation',
     heroText: 'Discover Cath Lab courses, enroll as a trainee, track progress, complete simulation practice, and prepare for trainer-led competency sign-off.',
@@ -148,7 +149,7 @@ const content = {
   },
   ar: {
     dir: 'rtl',
-    nav: ['الرئيسية', 'من نحن', 'كتالوج التدريب', 'مكتبة التدريب', 'الدبلوم', 'لوحة التحكم', 'الدخول', 'الشهادة'],
+    nav: ['الرئيسية', 'من نحن', 'كتالوج التدريب', 'مكتبة التدريب', 'معرفة PCI', 'الدبلوم', 'لوحة التحكم', 'الدخول', 'الشهادة'],
     switchTo: 'English',
     heroTitle: 'تدريب Cath Lab حسب الدور مع اعتماد الكفاءات',
     heroText: 'استعرض الدورات، سجّل كمتدرب، تابع تقدمك، تدرب بالمحاكاة، واستعد لاعتماد الكفاءة بإشراف المدرب.',
@@ -244,7 +245,7 @@ function Stat({ icon: Icon, value, label, note }) {
 
 function TopNav({ t, lang, setLang, session, profile, onSignOut }) {
   const [open, setOpen] = useState(false);
-  const hrefs = ['#home', '#about', '#catalog', '#resources', './program.html', '#dashboard', '#login', '#certificate'];
+  const hrefs = ['#home', '#about', '#catalog', '#resources', '#pci-knowledge', './program.html', '#dashboard', '#login', '#certificate'];
   const menuLabel = lang === 'ar' ? 'القائمة الرئيسية' : 'Main menu';
   const signedIn = Boolean(session?.user);
   const accountLabel = profile?.full_name || session?.user?.email || '';
@@ -448,6 +449,23 @@ function TrainingLibrary({ lang, courses, resources, loading, session, profile, 
   }
 
   return <section id="resources" className="section resources-section"><p className="eyebrow">{labels.eyebrow}</p><h2>{labels.title}</h2><p className="section-lead">{labels.lead}</p><div className="quality-badges"><span><Database /> Supabase Storage</span><span><ShieldCheck /> {labels.uploadOnly}</span><span><FileText /> PDF • PPTX • DOCX • MP4 • GLB</span></div>{!session?.user && <p className="inline-alert">{labels.login}</p>}<div className="resources-layout"><div className="resource-library-card"><div className="library-head"><h3>{rtl ? 'الملفات المتاحة' : 'Available resources'}</h3><button type="button" className="text-button" onClick={onRefresh} disabled={!session?.user || loading}><RotateCcw /> {labels.refresh}</button></div>{loading && <p className="inline-alert">{rtl ? 'جاري تحميل المكتبة...' : 'Loading library...'}</p>}{!loading && resources.length === 0 && <p className="inline-alert">{labels.empty}</p>}<div className="resource-list">{resources.map(resource => <article key={resource.id} className="resource-item"><div><span className="track-pill">{labels.types[resource.resource_type] || resource.resource_type}</span><h3>{resource.title}</h3>{resource.description && <p>{resource.description}</p>}<div className="catalog-meta"><span><BookOpen /> {resource.courseTitle || labels.noCourse}</span><span><FileCheck2 /> {resource.file_name}</span><span><Database /> {formatFileSize(resource.file_size_bytes, rtl)}</span>{resource.uploadedBy && <span><UserRound /> {labels.uploadedBy}: {resource.uploadedBy}</span>}</div></div>{resource.signedUrl ? <a className="enroll-button" href={resource.signedUrl} target="_blank" rel="noreferrer"><Download /> {labels.open}</a> : <span className="inline-alert">{rtl ? 'الرابط غير متاح' : 'Link unavailable'}</span>}</article>)}</div></div><form className="upload-card" onSubmit={submitUpload}><h3><UploadCloud /> {labels.uploadTitle}</h3><label><span>{labels.resourceTitle}</span><input value={title} onChange={event => setTitle(event.target.value)} placeholder={rtl ? 'مثال: RHC Lecture PDF' : 'Example: RHC Lecture PDF'} disabled={!canUpload || busy} required /></label><label><span>{labels.description}</span><textarea value={description} onChange={event => setDescription(event.target.value)} rows={3} placeholder={rtl ? 'ماذا يحتوي الملف؟' : 'What does this file include?'} disabled={!canUpload || busy} /></label><label><span>{labels.course}</span><select value={courseId} onChange={event => setCourseId(event.target.value)} disabled={!canUpload || busy}><option value="">{labels.noCourse}</option>{courseOptions.map(course => <option key={course.id} value={course.id}>{course.title}</option>)}</select></label><div className="upload-grid"><label><span>{labels.type}</span><select value={resourceType} onChange={event => setResourceType(event.target.value)} disabled={!canUpload || busy}>{Object.entries(labels.types).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label><span>{labels.visibility}</span><select value={visibility} onChange={event => setVisibility(event.target.value)} disabled={!canUpload || busy}>{Object.entries(labels.vis).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div><label><span>{labels.file}</span><input type="file" onChange={event => setFile(event.target.files?.[0] || null)} disabled={!canUpload || busy} accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.png,.jpg,.jpeg,.glb,.gltf" required /></label><button className="ai-submit" type="submit" disabled={!canUpload || busy}><UploadCloud /> {busy ? labels.uploading : labels.submit}</button>{status && <p className="inline-alert" role="status">{status}</p>}</form></div></section>;
+}
+
+
+function PciKnowledgeBase({ lang, modules, loading, session }) {
+  const rtl = lang === 'ar';
+  const [query, setQuery] = useState('');
+  const [trackFilter, setTrackFilter] = useState('all');
+  const [selectedId, setSelectedId] = useState('');
+  const tracks = [...new Set(modules.map(module => module.track).filter(Boolean))];
+  const visibleModules = modules.filter(module => {
+    const text = [module.id, module.title, module.track, ...(module.key_concepts || []), ...(module.learning_objectives || [])].join(' ').toLowerCase();
+    return (!query || text.includes(query.toLowerCase())) && (trackFilter === 'all' || module.track === trackFilter);
+  });
+  const selected = modules.find(module => module.id === selectedId) || visibleModules[0] || modules[0];
+  const totalMinutes = modules.reduce((total, module) => total + Number(module.estimated_duration_minutes || 0), 0);
+
+  return <section id="pci-knowledge" className="section pci-knowledge-section"><p className="eyebrow">{rtl ? 'قاعدة معرفة PCI' : 'PCI Knowledge Base'}</p><h2>{rtl ? 'برنامج تدريب PCI منظم من قاعدة البيانات' : 'Database-powered PCI Training Program'}</h2><p className="section-lead">{rtl ? 'تم استيراد محتوى PCI كـ 30 وحدة تدريبية مع أهداف، مفاهيم، نقاط سلامة، كفاءات، سيناريوهات، وأسئلة مراجعة. سجّل الدخول لعرض محتوى القاعدة.' : 'The imported PCI package is available as 30 structured modules with objectives, concepts, safety points, competencies, scenarios, and review questions. Sign in to view the knowledge base.'}</p><div className="quality-badges"><span><Database /> {rtl ? `${modules.length} وحدة من Supabase` : `${modules.length} Supabase modules`}</span><span><BookOpen /> {rtl ? `${tracks.length || 0} مسارات تدريبية` : `${tracks.length || 0} training tracks`}</span><span><CalendarDays /> {rtl ? `${Math.round(totalMinutes / 60)} ساعة تقريبًا` : `~${Math.round(totalMinutes / 60)} training hours`}</span></div>{!session?.user ? <div className="inline-alert"><LockKeyhole /> {rtl ? 'سجّل الدخول لعرض وحدات PCI.' : 'Sign in to access the PCI modules.'}</div> : <><div className="catalog-toolbar"><label><span>{rtl ? 'بحث' : 'Search'}</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={rtl ? 'ابحث بالعنوان أو المفاهيم...' : 'Search titles or concepts...'} /></label><label><span>{rtl ? 'المسار' : 'Track'}</span><select value={trackFilter} onChange={event => setTrackFilter(event.target.value)}><option value="all">{rtl ? 'كل المسارات' : 'All tracks'}</option>{tracks.map(track => <option key={track} value={track}>{track}</option>)}</select></label></div>{loading ? <p className="inline-alert">{rtl ? 'جاري تحميل PCI Knowledge Base...' : 'Loading PCI Knowledge Base...'}</p> : <div className="pci-knowledge-layout"><div className="pci-module-list" aria-label={rtl ? 'وحدات PCI' : 'PCI modules'}>{visibleModules.map(module => <button type="button" key={module.id} className={selected?.id === module.id ? 'active' : ''} onClick={() => setSelectedId(module.id)}><span>{module.id}</span><strong>{module.title}</strong><small>{module.track} • {module.estimated_duration_minutes || 45} min</small></button>)}{visibleModules.length === 0 && <p className="inline-alert">{rtl ? 'لا توجد وحدات مطابقة.' : 'No matching modules.'}</p>}</div>{selected && <article className="pci-module-detail"><div className="pci-detail-head"><span className="track-pill">{selected.track}</span><h3>{selected.id} — {selected.title}</h3><small>{rtl ? 'صفحة المصدر' : 'Source page'} {selected.source_start_page || '—'} • {selected.estimated_duration_minutes || 45} min</small></div><div className="pci-detail-grid"><div><h4>{rtl ? 'الأهداف التعليمية' : 'Learning objectives'}</h4><ul>{(selected.learning_objectives || []).map(item => <li key={item}>{item}</li>)}</ul></div><div><h4>{rtl ? 'المفاهيم الأساسية' : 'Key concepts'}</h4><ul>{(selected.key_concepts || []).map(item => <li key={item}>{item}</li>)}</ul></div><div><h4>{rtl ? 'نقاط السلامة' : 'Safety points'}</h4><ul>{(selected.safety_points || []).slice(0, 4).map(item => <li key={item}>{item}</li>)}</ul></div><div><h4>{rtl ? 'الكفاءات' : 'Competency checklist'}</h4><ul>{(selected.competency_checklist || []).slice(0, 6).map(item => <li key={item.item || item}>{item.critical ? '★ ' : ''}{item.item || item}</li>)}</ul></div></div><div className="scenario-callout"><h4>{rtl ? 'سيناريو تدريبي' : 'Clinical scenario'}</h4><p>{selected.clinical_scenario?.stem || (rtl ? 'لا يوجد سيناريو لهذا الموديول.' : 'No scenario available for this module.')}</p></div><div className="quiz-row"><h4>{rtl ? 'أسئلة مراجعة' : 'Review questions'}</h4>{(selected.quiz_questions || []).map((question, index) => <details key={question.question || index}><summary>{question.question || `${rtl ? 'سؤال' : 'Question'} ${index + 1}`}</summary><p>{question.rationale || question.answer || ''}</p></details>)}</div></article>}</div>}</>}</section>;
 }
 
 function AITutor({ lang, session, profile }) {
@@ -686,6 +704,8 @@ function App() {
   const [trainerSummary, setTrainerSummary] = useState(null);
   const [resources, setResources] = useState([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [knowledgeModules, setKnowledgeModules] = useState([]);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const completed = countCompletedCompetencies(checks);
   const totalCompetencies = useMemo(() => t.modules.reduce((acc, m) => acc + m.competencies.length, 0), [t.modules]);
   const simulationScore = t.scenarios.reduce((acc, item, i) => acc + (answers[i] === item.answer ? 1 : 0), 0);
@@ -737,6 +757,19 @@ function App() {
     }
   }
 
+  async function refreshKnowledgeModules() {
+    if (!session?.user) {
+      setKnowledgeModules([]);
+      return;
+    }
+    setKnowledgeLoading(true);
+    try {
+      setKnowledgeModules(await fetchKnowledgeModules('pci-training'));
+    } finally {
+      setKnowledgeLoading(false);
+    }
+  }
+
   async function handleResourceUpload(payload) {
     await uploadLearningResource({ ...payload, profileId: profile?.id });
     await refreshResources();
@@ -783,9 +816,10 @@ function App() {
 
   useEffect(() => {
     refreshResources();
+    refreshKnowledgeModules();
   }, [session?.user?.id, profile?.role, lang]);
 
-  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} session={session} profile={profile} onSignOut={handleSignOutEverywhere} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><TrainingLibrary lang={lang} courses={catalogCourses} resources={resources} loading={resourcesLoading} session={session} profile={profile} onUpload={handleResourceUpload} onRefresh={refreshResources} /><AITutor lang={lang} session={session} profile={profile} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><TrainerAdminDashboard t={t} profile={profile} summary={trainerSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
+  return <><a className="skip-link" href="#main-content">{lang === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}</a><TopNav t={t} lang={lang} setLang={setLang} session={session} profile={profile} onSignOut={handleSignOutEverywhere} /><main id="main-content" className={lang === 'ar' ? 'rtl' : 'ltr'}><section id="home" className="hero"><div className="hero-copy"><p className="eyebrow">Cath Lab Academy</p><h1>{t.heroTitle}</h1><p>{t.heroText}</p><div className="hero-actions"><a href="#catalog">{t.explore}</a><a className="secondary-cta" href="#dashboard">{lang === 'ar' ? 'لوحة المتدرب' : 'Learner dashboard'}</a><button type="button" onClick={printCertificate}><Download /> {t.printCertificate}</button></div></div><div className="hero-panel"><Hospital /><h2>{t.os}</h2><p>Recovery • Circulating • Scrub • Quality</p><div className="mini-dashboard"><span>{t.modules.length}<small>Modules</small></span><span>{t.scenarios.length}<small>Scenarios</small></span><span>{dashboardSummary?.enrollmentCount ?? completed}<small>{dashboardSummary ? (lang === 'ar' ? 'مسجلة' : 'Enrolled') : t.signed}</small></span></div></div></section><section className="stats-row">{t.stats.map(([value, label, note], i) => { const icons = [GraduationCap, Brain, Target, Camera]; return <Stat key={label} icon={icons[i]} value={value} label={label} note={note} />; })}</section><TrustReadiness t={t} /><ExecutiveOverview t={t} /><AboutSection t={t} /><TrainingCatalog t={t} courses={catalogCourses} source={catalogSource} session={session} profile={profile} onEnroll={handleCourseEnroll} /><TrainingLibrary lang={lang} courses={catalogCourses} resources={resources} loading={resourcesLoading} session={session} profile={profile} onUpload={handleResourceUpload} onRefresh={refreshResources} /><PciKnowledgeBase lang={lang} modules={knowledgeModules} loading={knowledgeLoading} session={session} /><AITutor lang={lang} session={session} profile={profile} /><Dashboard t={t} completed={completed} totalCompetencies={totalCompetencies} simulationScore={simulationScore} scenarioCount={t.scenarios.length} certificateReady={certificateReady} onReset={resetProgress} session={session} profile={profile} dashboardSummary={dashboardSummary} /><TrainerAdminDashboard t={t} profile={profile} summary={trainerSummary} /><LoginPrototype t={t} session={session} profile={profile} onAuthChange={refreshAuthState} /><ProgramModules t={t} checks={checks} setChecks={setChecks} /><Simulation t={t} answers={answers} setAnswers={setAnswers} /><CertificatePreview t={t} checks={checks} answers={answers} /><LaunchReadiness t={t} /><footer><Users /> {t.footer}</footer></main></>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);

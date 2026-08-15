@@ -410,3 +410,87 @@ footer { margin: 34px 0 12px; color: var(--muted); display: flex; gap: 10px; ali
   body.print-certificate-only small,
   body.print-certificate-only .cert-footer { color: #333; }
 }
+
+
+.pci-knowledge-section {
+  background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(232,246,251,.7));
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  padding: 30px;
+  box-shadow: 0 24px 70px rgba(14, 48, 71, .10);
+}
+.pci-knowledge-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, .8fr) minmax(0, 1.4fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+.pci-module-list {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  max-height: 760px;
+  overflow: auto;
+  padding-inline-end: 6px;
+}
+.pci-module-list button {
+  width: 100%;
+  text-align: start;
+  border: 1px solid rgba(14, 116, 144, .18);
+  background: rgba(255,255,255,.86);
+  color: var(--text);
+  border-radius: 18px;
+  padding: 13px 14px;
+  display: grid;
+  gap: 4px;
+}
+.pci-module-list button span {
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+.pci-module-list button strong { font-size: 14px; }
+.pci-module-list button small { color: var(--muted); }
+.pci-module-list button.active {
+  border-color: rgba(23, 111, 184, .42);
+  background: linear-gradient(135deg, rgba(232,246,251,.96), rgba(255,255,255,.92));
+  box-shadow: 0 14px 34px rgba(14, 116, 144, .14);
+}
+.pci-module-detail {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 22px;
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 18px 46px rgba(14,48,71,.10);
+}
+.pci-detail-head { display: grid; gap: 8px; margin-bottom: 16px; }
+.pci-detail-head h3 { margin: 0; font-size: clamp(22px, 3vw, 32px); }
+.pci-detail-head small { color: var(--muted); font-weight: 800; }
+.pci-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.pci-detail-grid > div, .scenario-callout, .quiz-row details {
+  border: 1px solid rgba(14, 116, 144, .14);
+  border-radius: 18px;
+  background: rgba(244,251,255,.78);
+  padding: 14px;
+}
+.pci-detail-grid h4, .scenario-callout h4, .quiz-row h4 { margin: 0 0 10px; }
+.pci-detail-grid ul { margin: 0; padding-inline-start: 20px; color: var(--muted); }
+.pci-detail-grid li { margin: 6px 0; }
+.scenario-callout {
+  margin-top: 14px;
+  background: linear-gradient(135deg, rgba(207,248,238,.72), rgba(232,246,251,.72));
+}
+.scenario-callout p { margin: 0; color: var(--muted); }
+.quiz-row { display: grid; gap: 10px; margin-top: 14px; }
+.quiz-row details { cursor: pointer; }
+.quiz-row summary { font-weight: 900; }
+.quiz-row p { color: var(--muted); margin-bottom: 0; }
+@media (max-width: 880px) {
+  .pci-knowledge-layout, .pci-detail-grid { grid-template-columns: 1fr; }
+  .pci-module-list { max-height: none; }
+}
